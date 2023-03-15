@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from recipes.models import Tag, Ingredient, Recipe, Favorite
+from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
 from users.models import Subscription
 from rest_framework import viewsets, decorators, response, mixins, status
 
@@ -66,7 +66,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return serializers.RecipeWriteSerializer
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
-    def subscribe(self, request, pk=None, **kwargs):
+    def favorite(self, request, pk=None, **kwargs):
         instance = self.request.user
         recipe = get_object_or_404(Recipe, pk=self.kwargs.get('recipe_pk'))
         favorite = Favorite.objects.filter(recipe=recipe.pk, user=instance)
@@ -85,5 +85,28 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return response.Response(status=status.HTTP_204_NO_CONTENT)
         return response.Response(
             data={'errors': 'Невозможно удалить! Рецепт не был в избранном.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @decorators.action(methods=['delete', 'post'], detail=True, url_path='shopping_cart', url_name='shopping_cart')
+    def shopping_cart(self, request, pk=None, **kwargs):
+        instance = self.request.user
+        recipe = get_object_or_404(Recipe, pk=self.kwargs.get('recipe_pk'))
+        shopping_cart = ShoppingCart.objects.filter(recipe=recipe.pk, user=instance)
+        if self.request.method == 'POST':
+            if shopping_cart.exists():
+                return response.Response(
+                    data={'errors': 'Рецепт уже в списке покупок!'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            ShoppingCart.objects.create(recipe=recipe, user=instance)
+            serializer = serializers.RecipeAuthorSerializer(recipe)
+            return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        if shopping_cart.exists():
+            shopping_cart.delete()
+            return response.Response(status=status.HTTP_204_NO_CONTENT)
+        return response.Response(
+            data={'errors': 'Невозможно удалить! Рецепт не был добавлен в список покупок.'},
             status=status.HTTP_400_BAD_REQUEST
         )
