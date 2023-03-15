@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from recipes.models import Tag, Ingredient, Recipe
+from users.models import Subscription
 
 
 User = get_user_model()
@@ -73,3 +74,30 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         if cooking_time < 1:
             raise serializers.ValidationError('Время приготовления должно быть >= 1!')
         return cooking_time
+
+
+class RecipeAuthorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = (
+            'id', 'name', 'image', 'cooking_time'
+        )
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+    recipes = RecipeAuthorSerializer(many=True, read_only=True)
+    recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
+
+    class Meta:
+        model = Subscription
+        fields = (
+            'pk', 'author',
+            #'subscriber',
+            'recipes', 'recipes_count'
+        )
+        read_only_fields = (
+            'email', 'id', 'username', 'first_name', 'last_name',
+            # 'is_subscribed',
+            'recipes',
+            'recipes_count'
+        )

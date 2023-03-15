@@ -6,7 +6,6 @@ app_name = 'api'
 
 router_v1 = DefaultRouter()
 router_v1.register('users', views.UserViewSet, basename='users')  # == GET/POST ... {id} == GET ... {me} == GET
-# router_v1.register(r'users/(?P<user_id>\d+)/subscribe', views.SubscribesViewSet, basename='subscribes')  # POST/DELETE
 router_v1.register('tags', views.TagViewSet, basename='tags')  # == GET ... {id} == GET
 router_v1.register('ingredient', views.IngredientViewSet, basename='ingredient')  # == GET ... {id} == GET
 router_v1.register('recipes', views.RecipeViewSet, basename='recipes')  # ALL
