@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from recipes.models import Tag, Ingredient, Recipe
+from recipes.models import Tag, Ingredient, Recipe, Favorite
 from users.models import Subscription
 from rest_framework import viewsets, decorators, response, mixins, status
 
@@ -58,8 +58,32 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
+    lookup_field = 'recipe_pk'
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return serializers.RecipeReadSerializer
         return serializers.RecipeWriteSerializer
+
+    @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
+    def subscribe(self, request, pk=None, **kwargs):
+        instance = self.request.user
+        recipe = get_object_or_404(Recipe, pk=self.kwargs.get('recipe_pk'))
+        favorite = Favorite.objects.filter(recipe=recipe.pk, user=instance)
+        if self.request.method == 'POST':
+            if favorite.exists():
+                return response.Response(
+                    data={'errors': 'Рецепт уже в избранном!'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            Favorite.objects.create(recipe=recipe, user=instance)
+            serializer = serializers.RecipeAuthorSerializer(recipe)
+            return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        if favorite.exists():
+            favorite.delete()
+            return response.Response(status=status.HTTP_204_NO_CONTENT)
+        return response.Response(
+            data={'errors': 'Невозможно удалить! Рецепт не был в избранном.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )

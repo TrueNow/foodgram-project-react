@@ -10,7 +10,6 @@ router_v1.register('tags', views.TagViewSet, basename='tags')  # == GET ... {id}
 router_v1.register('ingredient', views.IngredientViewSet, basename='ingredient')  # == GET ... {id} == GET
 router_v1.register('recipes', views.RecipeViewSet, basename='recipes')  # ALL
 # router_v1.register(r'recipes/(?P<recipe_id>\d+)/shopping_cart', views.ShoppingsViewSet, basename='shopping_cart')  # POST/DELETE
-# router_v1.register(r'recipes/(?P<recipe_id>\d+)/favorite', views.FavoritesViewSet, basename='favorites')  # POST/DELETE
 
 users_urlpatterns = [
     # path('set_password', views.SetPasswordView, name='download_shopping_cart'),  # POST

@@ -25,3 +25,8 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(Ingredient)
     tags = models.ManyToManyField(Tag)
     cooking_time = models.IntegerField()
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(User, related_name='favorite', on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, related_name='users_favorite', on_delete=models.CASCADE)
