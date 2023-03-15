@@ -7,6 +7,13 @@ class User(AbstractUser):
     last_name = models.CharField('Фамилия', max_length=150, blank=False)
     email = models.EmailField('Email', blank=False)
 
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
+    def __str__(self):
+        return f'{self.get_username()}'
+
 
 class Subscription(models.Model):
     subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subscriber')
