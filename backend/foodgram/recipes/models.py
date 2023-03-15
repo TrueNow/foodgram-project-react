@@ -11,11 +11,17 @@ class Tags(models.Model):
     slug = models.SlugField(unique=True)
 
 
+class Ingredients(models.Model):
+    name = models.CharField(max_length=50)
+    amount = models.IntegerField()
+    measurement_unit = models.CharField(max_length=20)
+
+
 class Recipes(models.Model):
     author = models.ForeignKey(User, related_name='recipes', on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     image = models.ImageField(upload_to='recipes/images/', null=True, default=None)
-    description = models.TextField()
-    # ingredients = models.ManyToManyField()
-    tag = models.ManyToManyField(Tags)
+    text = models.TextField()
+    ingredients = models.ManyToManyField(Ingredients)
+    tags = models.ManyToManyField(Tags)
     cooking_time = models.IntegerField()
