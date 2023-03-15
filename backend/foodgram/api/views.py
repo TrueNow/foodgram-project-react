@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from recipes.models import Tag, Ingredient
+from recipes.models import Tag, Ingredient, Recipe
 from rest_framework import viewsets, decorators, response, mixins
 
 from . import serializers
@@ -34,3 +34,13 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = serializers.IngredientSerializer
+
+
+class RecipeViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all()
+
+    def get_serializer_class(self):
+        print(self.action)
+        if self.action in ('list', 'retrieve'):
+            return serializers.RecipeReadSerializer
+        return serializers.RecipeWriteSerializer
