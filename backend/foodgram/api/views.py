@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
+from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, IngredientAmount
 from users.models import Subscription
 from rest_framework import viewsets, decorators, response, mixins, status
 
@@ -51,9 +51,9 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.TagSerializer
 
 
-class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Ingredient.objects.all()
-    serializer_class = serializers.IngredientSerializer
+class IngredientAmountViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = IngredientAmount.objects.all()
+    serializer_class = serializers.IngredientAmountSerializer
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

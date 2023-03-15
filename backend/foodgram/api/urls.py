@@ -5,11 +5,10 @@ from . import views
 app_name = 'api'
 
 router_v1 = DefaultRouter()
-router_v1.register('users', views.UserViewSet, basename='users')  # == GET/POST ... {id} == GET ... {me} == GET
-router_v1.register('tags', views.TagViewSet, basename='tags')  # == GET ... {id} == GET
-router_v1.register('ingredient', views.IngredientViewSet, basename='ingredient')  # == GET ... {id} == GET
-router_v1.register('recipes', views.RecipeViewSet, basename='recipes')  # ALL
-# router_v1.register(r'recipes/(?P<recipe_id>\d+)/shopping_cart', views.ShoppingsViewSet, basename='shopping_cart')  # POST/DELETE
+router_v1.register('users', views.UserViewSet, basename='users')
+router_v1.register('tags', views.TagViewSet, basename='tags')
+router_v1.register('ingredient', views.IngredientAmountViewSet, basename='ingredient')
+router_v1.register('recipes', views.RecipeViewSet, basename='recipes')
 
 users_urlpatterns = [
     # path('set_password', views.SetPasswordView, name='download_shopping_cart'),  # POST
