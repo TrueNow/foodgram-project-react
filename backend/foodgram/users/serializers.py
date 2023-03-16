@@ -6,16 +6,7 @@ from api.serializers import RecipeAuthorSerializer
 User = get_user_model()
 
 
-class UserReadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = (
-            'email', 'id', 'username', 'first_name', 'last_name',
-            # 'is_subscribed'
-        )
-
-
-class UserWriteSerializer(serializers.ModelSerializer):
+class SignUpSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
@@ -23,17 +14,30 @@ class UserWriteSerializer(serializers.ModelSerializer):
         )
 
 
-class SubscribeSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed'
+        )
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if not request or request.user.is_anonymous:
+            return False
+        return request.user.subscriber.filter(author=obj).exists()
+
+
+class SubscribeSerializer(UserSerializer):
     recipes = RecipeAuthorSerializer(many=True, read_only=True)
     recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
 
     class Meta:
         model = User
-        fields = UserReadSerializer.Meta.fields
-        fields += (
-            #'subscriber',
-            'recipes', 'recipes_count'
-        )
+        fields = UserSerializer.Meta.fields
+        fields += ('recipes', 'recipes_count')
 
 
 class ChangePasswordSerializer(serializers.Serializer):
