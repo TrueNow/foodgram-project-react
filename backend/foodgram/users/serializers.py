@@ -41,8 +41,8 @@ class SubscribeSerializer(UserSerializer):
 
 
 class ChangePasswordSerializer(serializers.Serializer):
-    new_password = serializers.CharField(max_length=128, required=True)
-    current_password = serializers.CharField(max_length=128, required=True)
+    new_password = serializers.CharField(max_length=128, required=True, style={'input_type': 'password'})
+    current_password = serializers.CharField(max_length=128, required=True, style={'input_type': 'password'})
 
     class Meta:
         fields = (
