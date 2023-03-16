@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from api.serializers import RecipeAuthorSerializer
+from api.serializers import RecipeGetSerializer
 
 
 User = get_user_model()
@@ -31,7 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class SubscribeSerializer(UserSerializer):
-    recipes = RecipeAuthorSerializer(many=True, read_only=True)
+    recipes = RecipeGetSerializer(many=True, read_only=True)
     recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
 
     class Meta:

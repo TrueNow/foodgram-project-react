@@ -51,13 +51,13 @@ class IngredientAmount(models.Model):
 
 
 class Recipe(models.Model):
-    author = models.ForeignKey(User, related_name='recipes', on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)
+    author = models.ForeignKey(User, related_name='recipes', on_delete=models.CASCADE, blank=False)
+    name = models.CharField(max_length=50, blank=False)
     image = models.ImageField(upload_to='recipes/images/', blank=True, null=True, default=None)
-    text = models.TextField()
-    ingredients = models.ManyToManyField(IngredientAmount)
-    tags = models.ManyToManyField(Tag)
-    cooking_time = models.IntegerField()
+    text = models.TextField(blank=False)
+    ingredients = models.ManyToManyField(IngredientAmount, blank=False)
+    tags = models.ManyToManyField(Tag, blank=False)
+    cooking_time = models.IntegerField(blank=False)
 
     class Meta:
         verbose_name = 'Рецепт'
