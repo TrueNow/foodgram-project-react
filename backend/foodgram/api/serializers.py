@@ -1,27 +1,9 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from recipes.models import Tag, Ingredient, Recipe, IngredientAmount
-from users.models import Subscription
 
 
 User = get_user_model()
-
-
-class UserReadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = (
-            'email', 'id', 'username', 'first_name', 'last_name',
-            # 'is_subscribed'
-        )
-
-
-class UserWriteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = (
-            'email', 'username', 'first_name', 'last_name', 'password'
-        )
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -46,10 +28,26 @@ class IngredientAmountSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
 
+class AuthorSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed'
+        )
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if not request or request.user.is_anonymous:
+            return False
+        return request.user.subscriber.filter(author=obj).exists()
+
+
 class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     ingredients = IngredientAmountSerializer(many=True, read_only=True)
-    author = UserReadSerializer()
+    author = AuthorSerializer()
 
     class Meta:
         model = Recipe
@@ -91,29 +89,6 @@ class RecipeAuthorSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = (
             'id', 'name', 'image', 'cooking_time'
-        )
-
-
-class SubscribeSerializer(UserReadSerializer):
-    recipes = RecipeAuthorSerializer(many=True, read_only=True)
-    recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
-
-    class Meta:
-        model = User
-        fields = UserReadSerializer.Meta.fields
-        fields += (
-            #'subscriber',
-            'recipes', 'recipes_count'
-        )
-
-
-class ChangePasswordSerializer(serializers.Serializer):
-    new_password = serializers.CharField(max_length=128, required=True)
-    current_password = serializers.CharField(max_length=128, required=True)
-
-    class Meta:
-        fields = (
-            'new_password', 'current_password'
         )
 
 
