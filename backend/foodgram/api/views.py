@@ -30,17 +30,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
         elif self.action in ('download_shopping_cart',):
             return serializers.ShoppingCartDownloadSerializer
 
-    def favorite_shopping_view(self, related_name):
+    def favorite_or_shopping_cart_view(self):
         instance = self.request.user
         recipe = self.get_object()
-        queryset = getattr(instance, related_name).filter(recipe=recipe)
+        queryset = getattr(instance, self.action).filter(recipe=recipe)
         if self.request.method == 'POST':
             if queryset.exists():
                 return response.Response(
                     data={'errors': 'Рецепт уже добавлен!'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            getattr(instance, related_name).create(recipe=recipe)
+            getattr(instance, self.action).create(recipe=recipe)
             serializer = serializers.ShortRecipeSerializer(recipe)
             return response.Response(serializer.data, status=status.HTTP_201_CREATED)
         if self.request.method == 'DELETE':
@@ -54,11 +54,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
     def favorite(self, request, pk=None, **kwargs):
-        return self.favorite_shopping_view('favorite')
+        return self.favorite_or_shopping_cart_view()
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='shopping_cart', url_name='shopping_cart')
     def shopping_cart(self, request, pk=None, **kwargs):
-        return self.favorite_shopping_view('shopping_cart')
+        return self.favorite_or_shopping_cart_view()
 
     @decorators.action(
         methods=['get'], detail=False,
