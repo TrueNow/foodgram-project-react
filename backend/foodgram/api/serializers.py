@@ -44,7 +44,7 @@ class AuthorSerializer(serializers.ModelSerializer):
         return request.user.subscriber.filter(author=obj).exists()
 
 
-class RecipeReadSerializer(serializers.ModelSerializer):
+class RecipeGetSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     ingredients = IngredientAmountSerializer(many=True, read_only=True)
     author = AuthorSerializer()
@@ -58,7 +58,8 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         )
 
 
-class RecipeWriteSerializer(serializers.ModelSerializer):
+
+class RecipeCreateSerializer(serializers.ModelSerializer):
     ingredients = serializers.SlugRelatedField(
         slug_field='id', many=True, queryset=Ingredient.objects.all()
     )
@@ -84,7 +85,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return cooking_time
 
 
-class RecipeAuthorSerializer(serializers.ModelSerializer):
+class ShortRecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = (
@@ -92,7 +93,7 @@ class RecipeAuthorSerializer(serializers.ModelSerializer):
         )
 
 
-class ShoppingCartSerializer(serializers.ModelSerializer):
+class ShoppingCartDownloadSerializer(serializers.ModelSerializer):
     ingredients = IngredientAmountSerializer(many=True)
 
     class Meta:
