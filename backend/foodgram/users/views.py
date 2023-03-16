@@ -18,6 +18,8 @@ class UserViewSet(mixins.CreateModelMixin,
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve', 'me'):
             return serializers.UserReadSerializer
+        elif self.action in ('post',):
+            return serializers.UserWriteSerializer
         elif self.action in ('subscribtions', 'subscribe'):
             return serializers.SubscribeSerializer
         elif self.action in ('set_password',):
@@ -42,13 +44,15 @@ class UserViewSet(mixins.CreateModelMixin,
         instance.save()
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    # @decorators.action(methods=['get'], detail=False, url_path='subscribtions', url_name='subscribtions')
-    # def subscribtions(self, request):
-    #     instance = self.request.user
-    #     subscribers = instance.following
-    #     print(subscribers)
-    #     serializer = self.get_serializer(subscribers, many=True)
-    #     return response.Response(serializer.data)
+    @decorators.action(methods=['get'], detail=False, url_path='subscribtions', url_name='subscribtions')
+    def subscribtions(self, request):
+        instance = self.request.user
+        subscribtions = instance.following.all()
+        subscribers = User.objects.filter(
+            id__in=subscribtions.values('author')
+        )
+        serializer = self.get_serializer(subscribers, many=True)
+        return response.Response(serializer.data)
 
     @decorators.action(methods=['post', 'delete'], detail=True, url_path='subscribe', url_name='subscribe')
     def subscribe(self, request, pk=None, **kwargs):
@@ -63,6 +67,6 @@ class UserViewSet(mixins.CreateModelMixin,
             return response.Response(serializer.data, status=status.HTTP_201_CREATED)
         if self.request.method == 'DELETE':
             if not subscription.exists():
-                raise exceptions.ValidationError('такого не существует! не могу удалить!')
+                raise exceptions.ValidationError('Такого не существует! Не могу удалить!')
             subscription.delete()
             return response.Response(status=status.HTTP_204_NO_CONTENT)
