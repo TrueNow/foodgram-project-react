@@ -105,9 +105,13 @@ class SubscribeSerializer(serializers.ModelSerializer):
             #'subscriber',
             'recipes', 'recipes_count'
         )
-        read_only_fields = (
-            'email', 'id', 'username', 'first_name', 'last_name',
-            # 'is_subscribed',
-            'recipes',
-            'recipes_count'
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(max_length=128, required=True)
+    current_password = serializers.CharField(max_length=128, required=True)
+
+    class Meta:
+        fields = (
+            'new_password', 'current_password'
         )

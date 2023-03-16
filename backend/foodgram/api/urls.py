@@ -10,11 +10,6 @@ router_v1.register('tags', views.TagViewSet, basename='tags')
 router_v1.register('ingredient', views.IngredientAmountViewSet, basename='ingredient')
 router_v1.register('recipes', views.RecipeViewSet, basename='recipes')
 
-users_urlpatterns = [
-    # path('set_password', views.SetPasswordView, name='download_shopping_cart'),  # POST
-    # path('subscriptions', views.SubscriptionsView, name='subscriptions'),  # GET
-]
-
 auth_urlpatterns = [
     # path('login', views.LoginView, name='login'),  # POST
     # path('logout', views.LogoutView, name='logout'),  # POST
