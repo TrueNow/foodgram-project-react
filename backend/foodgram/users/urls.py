@@ -1,11 +1,7 @@
-from django.urls import include, path
-from . import views
+from django.conf.urls import url
+from django.urls import include
 
-auth_urlpatterns = [
-    path('login', views.LoginView, name='login'),  # POST
-    path('logout', views.LogoutView, name='logout'),  # POST
-]
 
 urlpatterns = [
-    path('auth/token', include((auth_urlpatterns, 'users'), namespace='auth')),
+    url(r'^auth/', include('djoser.urls.authtoken')),
 ]
