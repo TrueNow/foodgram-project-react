@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from recipes.models import Tag, Ingredient, Recipe
+from recipes.models import Tag, Ingredient, Recipe, IngredientAmount
+from users.models import Subscription
 
 
 User = get_user_model()
@@ -35,9 +36,19 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit')
 
 
+class IngredientAmountSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(source='ingredient.measurement_unit')
+
+    class Meta:
+        model = IngredientAmount
+        fields = ('id', 'name', 'measurement_unit', 'amount')
+
+
 class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
-    ingredients = IngredientSerializer(many=True, read_only=True)
+    ingredients = IngredientAmountSerializer(many=True, read_only=True)
     author = UserReadSerializer()
 
     class Meta:
@@ -73,3 +84,44 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         if cooking_time < 1:
             raise serializers.ValidationError('Время приготовления должно быть >= 1!')
         return cooking_time
+
+
+class RecipeAuthorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = (
+            'id', 'name', 'image', 'cooking_time'
+        )
+
+
+class SubscribeSerializer(UserReadSerializer):
+    recipes = RecipeAuthorSerializer(many=True, read_only=True)
+    recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
+
+    class Meta:
+        model = User
+        fields = UserReadSerializer.Meta.fields
+        fields += (
+            #'subscriber',
+            'recipes', 'recipes_count'
+        )
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(max_length=128, required=True)
+    current_password = serializers.CharField(max_length=128, required=True)
+
+    class Meta:
+        fields = (
+            'new_password', 'current_password'
+        )
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    ingredients = IngredientAmountSerializer(many=True)
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'name', 'ingredients'
+        )
