@@ -17,12 +17,11 @@ class UserViewSet(mixins.CreateModelMixin,
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve', 'me'):
             return serializers.UserSerializer
-        elif self.action in ('create',):
-            return serializers.SignUpSerializer
         elif self.action in ('subscriptions', 'subscribe'):
             return serializers.SubscribeSerializer
         elif self.action in ('set_password',):
             return serializers.ChangePasswordSerializer
+        return serializers.SignUpSerializer
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

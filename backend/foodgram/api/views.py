@@ -25,9 +25,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return serializers.RecipeGetSerializer
         elif self.action in ('favorite', 'shopping_cart'):
-            return serializers.RecipeCreateSerializer
+            return serializers.ShortRecipeSerializer
         elif self.action in ('download_shopping_cart',):
             return serializers.ShoppingCartDownloadSerializer
+        return serializers.RecipeCreateSerializer
 
     def favorite_or_shopping_cart_view(self):
         instance = self.request.user
@@ -40,7 +41,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             getattr(instance, self.action).create(recipe=recipe)
-            serializer = serializers.ShortRecipeSerializer(recipe)
+            serializer = self.get_serializer(recipe)
             return response.Response(serializer.data, status=status.HTTP_201_CREATED)
         if self.request.method == 'DELETE':
             if queryset.exists():
@@ -52,18 +53,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
-    def favorite(self, request, **kwargs):
+    def favorite(self, request, *args, **kwargs):
         return self.favorite_or_shopping_cart_view()
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='shopping_cart', url_name='shopping_cart')
-    def shopping_cart(self, request, **kwargs):
+    def shopping_cart(self, request, *args, **kwargs):
         return self.favorite_or_shopping_cart_view()
 
     @decorators.action(
         methods=['get'], detail=False,
         url_path='download_shopping_cart', url_name='download_shopping_cart'
     )
-    def download_shopping_cart(self, request, **kwargs):
+    def download_shopping_cart(self, request, *args, **kwargs):
         instance = self.request.user
         shopping_cart = instance.shopping_cart.all()
         recipes = Recipe.objects.filter(
