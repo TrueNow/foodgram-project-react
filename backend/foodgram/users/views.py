@@ -19,7 +19,7 @@ class UserViewSet(mixins.CreateModelMixin,
             return serializers.UserSerializer
         elif self.action in ('create',):
             return serializers.SignUpSerializer
-        elif self.action in ('subscribtions', 'subscribe'):
+        elif self.action in ('subscriptions', 'subscribe'):
             return serializers.SubscribeSerializer
         elif self.action in ('set_password',):
             return serializers.ChangePasswordSerializer
@@ -59,12 +59,12 @@ class UserViewSet(mixins.CreateModelMixin,
         instance.save()
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    @decorators.action(methods=['get'], detail=False, url_path='subscribtions', url_name='subscribtions')
-    def subscribtions(self, request, *args, **kwargs):
+    @decorators.action(methods=['get'], detail=False, url_path='subscriptions', url_name='subscriptions')
+    def subscriptions(self, request, *args, **kwargs):
         instance = self.get_object()
-        subscribtions = instance.following.all()
+        subscriptions = instance.following.all()
         subscribers = User.objects.filter(
-            id__in=subscribtions.values('author')
+            id__in=subscriptions.values('author')
         )
         serializer = self.get_serializer(subscribers, many=True)
         return response.Response(serializer.data)
