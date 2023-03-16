@@ -21,14 +21,14 @@ class IngredientAmountViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    lookup_field = 'recipe_pk'
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
-            return serializers.RecipeReadSerializer
+            return serializers.RecipeGetSerializer
+        elif self.action in ('favorite', 'shopping_cart'):
+            return serializers.RecipeCreateSerializer
         elif self.action in ('download_shopping_cart',):
-            return serializers.ShoppingCartSerializer
-        return serializers.RecipeWriteSerializer
+            return serializers.ShoppingCartDownloadSerializer
 
     def favorite_shopping_view(self, related_name):
         instance = self.request.user
