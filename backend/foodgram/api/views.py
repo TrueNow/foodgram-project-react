@@ -30,51 +30,35 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return serializers.ShoppingCartSerializer
         return serializers.RecipeWriteSerializer
 
-    @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
-    def favorite(self, request, pk=None, **kwargs):
+    def favorite_shopping_view(self, related_name):
         instance = self.request.user
-        recipe = get_object_or_404(Recipe, pk=self.kwargs.get('recipe_pk'))
-        favorite = Favorite.objects.filter(recipe=recipe.pk, user=instance)
+        recipe = self.get_object()
+        queryset = getattr(instance, related_name).filter(recipe=recipe)
         if self.request.method == 'POST':
-            if favorite.exists():
+            if queryset.exists():
                 return response.Response(
-                    data={'errors': 'Рецепт уже в избранном!'},
+                    data={'errors': 'Рецепт уже добавлен!'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            Favorite.objects.create(recipe=recipe, user=instance)
-            serializer = serializers.RecipeAuthorSerializer(recipe)
+            getattr(instance, related_name).create(recipe=recipe)
+            serializer = serializers.ShortRecipeSerializer(recipe)
             return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+        if self.request.method == 'DELETE':
+            if queryset.exists():
+                queryset.delete()
+                return response.Response(status=status.HTTP_204_NO_CONTENT)
+            return response.Response(
+                data={'errors': 'Невозможно удалить, рецепт не добавлен.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        if favorite.exists():
-            favorite.delete()
-            return response.Response(status=status.HTTP_204_NO_CONTENT)
-        return response.Response(
-            data={'errors': 'Невозможно удалить! Рецепт не был в избранном.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
+    def favorite(self, request, pk=None, **kwargs):
+        return self.favorite_shopping_view('favorite')
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='shopping_cart', url_name='shopping_cart')
     def shopping_cart(self, request, pk=None, **kwargs):
-        instance = self.request.user
-        recipe = get_object_or_404(Recipe, pk=self.kwargs.get('recipe_pk'))
-        shopping_cart = ShoppingCart.objects.filter(recipe=recipe.pk, user=instance)
-        if self.request.method == 'POST':
-            if shopping_cart.exists():
-                return response.Response(
-                    data={'errors': 'Рецепт уже в списке покупок!'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            ShoppingCart.objects.create(recipe=recipe, user=instance)
-            serializer = serializers.RecipeAuthorSerializer(recipe)
-            return response.Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        if shopping_cart.exists():
-            shopping_cart.delete()
-            return response.Response(status=status.HTTP_204_NO_CONTENT)
-        return response.Response(
-            data={'errors': 'Невозможно удалить! Рецепт не был добавлен в список покупок.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return self.favorite_shopping_view('shopping_cart')
 
     @decorators.action(
         methods=['get'], detail=False,
