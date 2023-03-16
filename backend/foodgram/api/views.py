@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, IngredientAmount
 from rest_framework import viewsets, decorators, response, status
 
@@ -53,11 +52,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
-    def favorite(self, request, pk=None, **kwargs):
+    def favorite(self, request, **kwargs):
         return self.favorite_or_shopping_cart_view()
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='shopping_cart', url_name='shopping_cart')
-    def shopping_cart(self, request, pk=None, **kwargs):
+    def shopping_cart(self, request, **kwargs):
         return self.favorite_or_shopping_cart_view()
 
     @decorators.action(
