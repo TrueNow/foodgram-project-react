@@ -44,6 +44,15 @@ class AuthorSerializer(serializers.ModelSerializer):
         return request.user.subscriber.filter(author=obj).exists()
 
 
+class MetaRecipe(serializers.SerializerMetaclass):
+    model = Recipe
+    fields = (
+        'id', 'ingredients', 'tags',
+        'is_favorited', 'is_in_shopping_cart',
+        'author', 'name', 'image', 'text', 'cooking_time'
+    )
+
+
 class RecipeGetSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     ingredients = IngredientAmountSerializer(many=True, read_only=True)
@@ -51,13 +60,8 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
-    class Meta:
-        model = Recipe
-        fields = (
-            'id', 'ingredients', 'tags',
-            'is_favorited', 'is_in_shopping_cart',
-            'author', 'name', 'image', 'text', 'cooking_time'
-        )
+    class Meta(MetaRecipe):
+        pass
 
     def get_is_favorited(self, obj):
         request = self.context.get('request')
@@ -72,38 +76,33 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         return request.user.shopping_cart.filter(recipe=obj).exists()
 
 
-class RecipeCreateSerializer(serializers.ModelSerializer):
-    ingredients = serializers.SlugRelatedField(
-        slug_field='id', many=True, queryset=Ingredient.objects.all()
-    )
+class RecipeCreateSerializer(RecipeGetSerializer):
     tags = serializers.SlugRelatedField(
         slug_field='id', many=True, queryset=Tag.objects.all()
+    )
+    ingredients = serializers.SlugRelatedField(
+        slug_field='id', many=True, queryset=Ingredient.objects.all()
     )
     author = serializers.SlugRelatedField(
         slug_field='id', queryset=User.objects.all()
     )
 
-    class Meta:
-        model = Recipe
-        fields = (
-            'id', 'tags', 'ingredients',
-            # 'is_favorited', 'is_in_shopping_cart',
-            'author', 'name', 'image', 'text', 'cooking_time'
-        )
+    class Meta(MetaRecipe):
+        pass
 
     @staticmethod
     def validate_cooking_time(cooking_time):
         if cooking_time < 1:
             raise serializers.ValidationError('Время приготовления должно быть >= 1!')
+        if cooking_time > 1440:
+            raise serializers.ValidationError('Время приготовления должно быть больше суток!')
         return cooking_time
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
-        fields = (
-            'id', 'name', 'image', 'cooking_time'
-        )
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class ShoppingCartDownloadSerializer(serializers.ModelSerializer):
@@ -111,6 +110,4 @@ class ShoppingCartDownloadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = (
-            'name', 'ingredients'
-        )
+        fields = ('name', 'ingredients')
