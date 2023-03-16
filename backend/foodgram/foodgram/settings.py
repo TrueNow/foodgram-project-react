@@ -66,6 +66,11 @@ REST_FRAMEWORK = {
     ),
 }
 
+DJOSER = {
+    'LOGIN_FIELD': 'email'
+}
+
+
 ROOT_URLCONF = 'foodgram.urls'
 
 TEMPLATES = [
