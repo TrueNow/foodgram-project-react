@@ -15,15 +15,7 @@ auth_urlpatterns = [
     # path('logout', views.LogoutView, name='logout'),  # POST
 ]
 
-
-recipes_urlpatterns = [
-    # path('download_shopping_cart', views.DownloadCartView, name='download_shopping_cart'),  # GET
-]
-
-
 urlpatterns = [
-    path('users', include((users_urlpatterns, 'users'), namespace='users')),
     path('auth/token', include((auth_urlpatterns, 'users'), namespace='auth')),
-    path('recipes', include((recipes_urlpatterns, 'recipes'), namespace='recipes')),
     path('', include(router_v1.urls)),
 ]

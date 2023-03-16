@@ -94,14 +94,14 @@ class RecipeAuthorSerializer(serializers.ModelSerializer):
         )
 
 
-class SubscribeSerializer(serializers.ModelSerializer):
+class SubscribeSerializer(UserReadSerializer):
     recipes = RecipeAuthorSerializer(many=True, read_only=True)
     recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
 
     class Meta:
-        model = Subscription
-        fields = (
-            'pk', 'author',
+        model = User
+        fields = UserReadSerializer.Meta.fields
+        fields += (
             #'subscriber',
             'recipes', 'recipes_count'
         )
@@ -114,4 +114,14 @@ class ChangePasswordSerializer(serializers.Serializer):
     class Meta:
         fields = (
             'new_password', 'current_password'
+        )
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    ingredients = IngredientAmountSerializer(many=True)
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'name', 'ingredients'
         )

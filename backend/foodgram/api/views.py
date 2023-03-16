@@ -87,6 +87,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return serializers.RecipeReadSerializer
+        elif self.action in ('download_shopping_cart',):
+            return serializers.ShoppingCartSerializer
         return serializers.RecipeWriteSerializer
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
@@ -134,3 +136,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
             data={'errors': 'Невозможно удалить! Рецепт не был добавлен в список покупок.'},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    @decorators.action(
+        methods=['get'], detail=False,
+        url_path='download_shopping_cart', url_name='download_shopping_cart'
+    )
+    def download_shopping_cart(self, request, **kwargs):
+        instance = self.request.user
+        shopping_cart = instance.shopping_cart.all()
+        recipes = Recipe.objects.filter(
+            id__in=shopping_cart.values('recipe')
+        )
+        serializer = self.get_serializer(recipes, many=True)
+        return response.Response(serializer.data)
