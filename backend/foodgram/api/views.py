@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
+from django_filters.rest_framework import DjangoFilterBackend
 from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, IngredientAmount
-from rest_framework import viewsets, decorators, response, status, exceptions
+from rest_framework import viewsets, decorators, response, status, exceptions, filters
 from . import serializers, permissions
 
 
@@ -12,6 +13,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = serializers.TagSerializer
     permission_classes = (permissions.AllowAny,)
+    pagination_class = None
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
