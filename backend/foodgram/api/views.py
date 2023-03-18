@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.db.utils import IntegrityError
 from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, IngredientAmount
-from rest_framework import viewsets, decorators, response, status
+from rest_framework import viewsets, decorators, response, status, exceptions
 
 from . import serializers
 
@@ -33,24 +34,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def favorite_or_shopping_cart_view(self):
         instance = self.request.user
         recipe = self.get_object()
-        queryset = getattr(instance, self.action).filter(recipe=recipe)
+        record = getattr(instance, self.action)
         if self.request.method == 'POST':
-            if queryset.exists():
-                return response.Response(
-                    data={'errors': 'Рецепт уже добавлен!'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            getattr(instance, self.action).create(recipe=recipe)
+            try:
+                record.create(recipe=recipe)
+            except IntegrityError:
+                raise exceptions.ValidationError({'errors': 'Рецепт уже добавлен!'})
             serializer = self.get_serializer(recipe)
             return response.Response(serializer.data, status=status.HTTP_201_CREATED)
         if self.request.method == 'DELETE':
-            if queryset.exists():
-                queryset.delete()
-                return response.Response(status=status.HTTP_204_NO_CONTENT)
-            return response.Response(
-                data={'errors': 'Невозможно удалить, рецепт не добавлен.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            record = record.filter(recipe=recipe)
+            if not record.exists():
+                raise exceptions.ValidationError({'errors': 'Рецепта не найдено.'})
+            record.delete()
+            return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
     def favorite(self, request, *args, **kwargs):
