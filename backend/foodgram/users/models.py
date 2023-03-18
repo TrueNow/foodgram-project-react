@@ -2,6 +2,11 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
+BANNED_USERNAMES = (
+    'me', 'set_password',
+)
+
+
 class User(AbstractUser):
     first_name = models.CharField(verbose_name='Имя', max_length=150, blank=False)
     last_name = models.CharField(verbose_name='Фамилия', max_length=150, blank=False)
