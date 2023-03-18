@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
 from rest_framework import viewsets, decorators, response, mixins, status, exceptions
 from django.urls import reverse
-from . import serializers
+from . import serializers, permissions
 
 
 User = get_user_model()
@@ -13,6 +13,7 @@ class UserViewSet(mixins.CreateModelMixin,
                   mixins.ListModelMixin,
                   viewsets.GenericViewSet):
     queryset = User.objects.all()
+    permission_classes = (permissions.UserPermission,)
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve', 'me'):
