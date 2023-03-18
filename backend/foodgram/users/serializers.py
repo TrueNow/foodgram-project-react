@@ -1,7 +1,7 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, password_validation
 from rest_framework import serializers
 from api.serializers import RecipeGetSerializer
-
+from users import validators as users_validators
 
 User = get_user_model()
 
@@ -12,6 +12,16 @@ class SignUpSerializer(serializers.ModelSerializer):
         fields = (
             'email', 'username', 'first_name', 'last_name', 'password'
         )
+
+    @staticmethod
+    def validate_username(value):
+        users_validators.validate_username(value)
+        return value
+
+    @staticmethod
+    def validate_password(value):
+        password_validation.validate_password(value)
+        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -41,10 +51,15 @@ class SubscribeSerializer(UserSerializer):
 
 
 class ChangePasswordSerializer(serializers.Serializer):
-    new_password = serializers.CharField(max_length=128, required=True)
-    current_password = serializers.CharField(max_length=128, required=True)
+    new_password = serializers.CharField(max_length=128, required=True, style={'input_type': 'password'})
+    current_password = serializers.CharField(max_length=128, required=True, style={'input_type': 'password'})
 
     class Meta:
         fields = (
             'new_password', 'current_password'
         )
+
+    @staticmethod
+    def validate_new_password(value):
+        password_validation.validate_password(value)
+        return value
