@@ -33,13 +33,12 @@ class UserViewSet(mixins.CreateModelMixin,
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(request.data)
         serializer.is_valid(raise_exception=True)
-        user = self.perform_create(serializer)
-        serializer = serializers.UserSerializer(user)
+        self.perform_create(serializer)
+        self.action = 'retrieve'
+        user = User.objects.get(**serializer.validated_data)
+        serializer = self.get_serializer(user)
         headers = self.get_success_headers(serializer.data)
         return response.Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    def perform_create(self, serializer):
-        return serializer.save()
 
     @decorators.action(methods=['get'], detail=False, url_path='me', url_name='me')
     def me(self, request, *args, **kwargs):
@@ -51,10 +50,12 @@ class UserViewSet(mixins.CreateModelMixin,
     def set_password(self, request, *args, **kwargs):
         instance = self.request.user
         serializer = self.get_serializer(self.request.data)
-        new_pass, curr_pass = serializer.data.get('new_password'), serializer.data.get('current_password')
-        if not instance.check_password(curr_pass):
+        serializer.is_valid(raise_exception=True)
+        curr_password = serializer.validated_data.get('current_password')
+        if not instance.check_password(curr_password):
             raise exceptions.ValidationError('Неверный пароль!')
-        instance.set_password(new_pass)
+        new_password = serializer.validated_data.get('new_password')
+        instance.set_password(new_password)
         instance.save()
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
