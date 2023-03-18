@@ -14,9 +14,9 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.AllowAny,)
 
 
-class IngredientAmountViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = IngredientAmount.objects.all()
-    serializer_class = serializers.IngredientAmountSerializer
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Ingredient.objects.all()
+    serializer_class = serializers.IngredientSerializer
     permission_classes = (permissions.AllowAny,)
 
 
