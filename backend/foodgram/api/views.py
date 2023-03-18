@@ -2,8 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
 from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, IngredientAmount
 from rest_framework import viewsets, decorators, response, status, exceptions
-
-from . import serializers
+from . import serializers, permissions
 
 
 User = get_user_model()
@@ -12,15 +11,18 @@ User = get_user_model()
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = serializers.TagSerializer
+    permission_classes = (permissions.AllowAny,)
 
 
 class IngredientAmountViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = IngredientAmount.objects.all()
     serializer_class = serializers.IngredientAmountSerializer
+    permission_classes = (permissions.AllowAny,)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
+    permission_classes = (permissions.RecipePermission,)
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
