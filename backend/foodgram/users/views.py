@@ -25,11 +25,9 @@ class UserViewSet(mixins.CreateModelMixin,
         return serializers.SignUpSerializer
 
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if self.request.user == instance:
+        if self.request.user == self.get_object():
             return redirect(reverse('users:users-me'))
-        serializer = self.get_serializer(instance)
-        return response.Response(serializer.data)
+        return super().retrieve(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(request.data)

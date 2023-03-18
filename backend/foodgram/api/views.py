@@ -33,31 +33,38 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return serializers.ShoppingCartDownloadSerializer
         return serializers.RecipeCreateSerializer
 
-    def favorite_or_shopping_cart_view(self):
-        instance = self.request.user
+    def _create_in_favorite(self, record):
         recipe = self.get_object()
+        try:
+            record.create(recipe=recipe)
+        except IntegrityError:
+            raise exceptions.ValidationError({'errors': 'Рецепт уже добавлен!'})
+        serializer = self.get_serializer(recipe)
+        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def _delete_in_favorite(self, record):
+        recipe = self.get_object()
+        record = record.filter(recipe=recipe)
+        if not record.exists():
+            raise exceptions.ValidationError({'errors': 'Рецепта не найдено.'})
+        record.delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+    def _favorite_view(self):
+        instance = self.request.user
         record = getattr(instance, self.action)
         if self.request.method == 'POST':
-            try:
-                record.create(recipe=recipe)
-            except IntegrityError:
-                raise exceptions.ValidationError({'errors': 'Рецепт уже добавлен!'})
-            serializer = self.get_serializer(recipe)
-            return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+            return self._create_in_favorite(record)
         if self.request.method == 'DELETE':
-            record = record.filter(recipe=recipe)
-            if not record.exists():
-                raise exceptions.ValidationError({'errors': 'Рецепта не найдено.'})
-            record.delete()
-            return response.Response(status=status.HTTP_204_NO_CONTENT)
+            return self._delete_in_favorite(record)
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
     def favorite(self, request, *args, **kwargs):
-        return self.favorite_or_shopping_cart_view()
+        return self._favorite_view()
 
     @decorators.action(methods=['delete', 'post'], detail=True, url_path='shopping_cart', url_name='shopping_cart')
     def shopping_cart(self, request, *args, **kwargs):
-        return self.favorite_or_shopping_cart_view()
+        return self._favorite_view()
 
     @decorators.action(
         methods=['get'], detail=False,
