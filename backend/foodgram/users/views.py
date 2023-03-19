@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from django.shortcuts import redirect
 from rest_framework import viewsets, decorators, response, mixins, status, exceptions
 from django.urls import reverse
@@ -67,23 +68,31 @@ class UserViewSet(mixins.CreateModelMixin,
         serializer = self.get_serializer(subscribers, many=True)
         return response.Response(serializer.data)
 
+    def _create_subscribe(self, record):
+        author = self.get_object()
+        try:
+            record.create(author=author)
+        except IntegrityError:
+            raise exceptions.ValidationError({'errors': 'Вы уже подписаны.'})
+        serializer = self.get_serializer(author)
+        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def _delete_subscribe(self, record):
+        author = self.get_object()
+        record = record.filter(author=author)
+        if not record.exists():
+            raise exceptions.ValidationError({'errors': 'Вы не были подписаны.'})
+        record.delete()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
     @decorators.action(
         methods=['post', 'delete'], detail=True, url_path='subscribe', url_name='subscribe',
         permission_classes=[permissions.IsAuthenticated]
     )
     def subscribe(self, request, *args, **kwargs):
         instance = self.request.user
-        author = self.get_object()
-        subscription = instance.subscriber.filter(author=author)
+        record = getattr(instance, 'subscriber')
         if self.request.method == 'POST':
-            if subscription.exists():
-                raise exceptions.ValidationError('Уже есть!')
-            instance.subscriber.create(author=author)
-            serializer = serializers.SubscribeSerializer(author)
-            headers = self.get_success_headers(serializer.data)
-            return response.Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        if self.request.method == 'DELETE':
-            if not subscription.exists():
-                raise exceptions.ValidationError('Такого не существует! Не могу удалить!')
-            subscription.delete()
-            return response.Response(status=status.HTTP_204_NO_CONTENT)
+            return self._create_subscribe(record)
+        elif self.request.method == 'DELETE':
+            return self._delete_subscribe(record)
