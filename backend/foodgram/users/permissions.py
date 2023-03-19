@@ -5,7 +5,9 @@ class UserPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         if view.action in ('me', 'set_password', 'subscriptions', 'subscribe'):
             return request.user.is_authenticated
-        return request.user.is_anonymous
+        elif view.action in ('create',):
+            return request.user.is_anonymous
+        return True
 
     def has_object_permission(self, request, view, obj):
         if request.user.is_anonymous:
@@ -13,4 +15,4 @@ class UserPermission(permissions.BasePermission):
 
         if view.action in ('subscribe',):
             return obj != request.user
-        return False
+        return True

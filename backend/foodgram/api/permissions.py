@@ -11,9 +11,9 @@ class RecipePermission(permissions.BasePermission):
             'favorite', 'shopping_cart', 'download_shopping_cart'
         ):
             return request.user.is_authenticated
-        return request.user.is_anonymous
+        return True
 
     def has_object_permission(self, request, view, obj):
         if view.action in ('update', 'partial_update', 'destroy'):
-            return request.user.is_authenticated and obj.author == request.user
-        return request.user.is_anonymous
+            return request.user.is_authenticated and obj.author == request.user or request.user.is_superuser
+        return True
