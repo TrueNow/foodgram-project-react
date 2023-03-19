@@ -3,8 +3,9 @@ from django.db.utils import IntegrityError
 from django_filters.rest_framework import DjangoFilterBackend
 from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, IngredientAmount
 from rest_framework import viewsets, decorators, response, status, exceptions, filters
-from . import serializers, permissions
+from . import serializers, filters as custom_filters
 
+from core import permissions
 
 User = get_user_model()
 
@@ -27,7 +28,9 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    permission_classes = (permissions.RecipePermission,)
+    permission_classes = (permissions.IsOwnerOrAdminOrReadOnly,)
+    # filter_backends = (DjangoFilterBackend,)
+    # filter_class = custom_filters.RecipeFilter
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
@@ -38,7 +41,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return serializers.ShoppingCartDownloadSerializer
         return serializers.RecipeCreateSerializer
 
-    def _create_in_favorite(self, record):
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def _create_in_favorite_or_shopping_cart(self, record):
         recipe = self.get_object()
         try:
             record.create(recipe=recipe)
@@ -47,7 +53,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(recipe)
         return response.Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def _delete_in_favorite(self, record):
+    def _delete_in_favorite_or_shopping_cart(self, record):
         recipe = self.get_object()
         record = record.filter(recipe=recipe)
         if not record.exists():
@@ -55,25 +61,32 @@ class RecipeViewSet(viewsets.ModelViewSet):
         record.delete()
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    def _favorite_view(self):
+    def _favorite_or_shopping_cart_view(self):
         instance = self.request.user
         record = getattr(instance, self.action)
         if self.request.method == 'POST':
-            return self._create_in_favorite(record)
+            return self._create_in_favorite_or_shopping_cart(record)
         if self.request.method == 'DELETE':
-            return self._delete_in_favorite(record)
+            return self._delete_in_favorite_or_shopping_cart(record)
 
-    @decorators.action(methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite')
+    @decorators.action(
+        methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite',
+        permission_classes=[permissions.IsAuthenticated]
+    )
     def favorite(self, request, *args, **kwargs):
-        return self._favorite_view()
+        return self._favorite_or_shopping_cart_view()
 
-    @decorators.action(methods=['delete', 'post'], detail=True, url_path='shopping_cart', url_name='shopping_cart')
+    @decorators.action(
+        methods=['delete', 'post'], detail=True, url_path='shopping_cart', url_name='shopping_cart',
+        permission_classes=[permissions.IsAuthenticated]
+    )
     def shopping_cart(self, request, *args, **kwargs):
-        return self._favorite_view()
+        return self._favorite_or_shopping_cart_view()
 
     @decorators.action(
         methods=['get'], detail=False,
-        url_path='download_shopping_cart', url_name='download_shopping_cart'
+        url_path='download_shopping_cart', url_name='download_shopping_cart',
+        permission_classes=[permissions.IsAuthenticated]
     )
     def download_shopping_cart(self, request, *args, **kwargs):
         instance = self.request.user
