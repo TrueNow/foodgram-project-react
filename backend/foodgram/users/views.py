@@ -29,16 +29,6 @@ class UserViewSet(mixins.CreateModelMixin,
             return redirect(reverse('users:users-me'))
         return super().retrieve(request, *args, **kwargs)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        self.action = 'retrieve'
-        user = User.objects.get(**serializer.validated_data)
-        serializer = self.get_serializer(user)
-        headers = self.get_success_headers(serializer.data)
-        return response.Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
     @decorators.action(methods=['get'], detail=False, url_path='me', url_name='me')
     def me(self, request, *args, **kwargs):
         instance = self.request.user
@@ -60,10 +50,10 @@ class UserViewSet(mixins.CreateModelMixin,
 
     @decorators.action(methods=['get'], detail=False, url_path='subscriptions', url_name='subscriptions')
     def subscriptions(self, request, *args, **kwargs):
-        instance = self.get_object()
-        subscriptions = instance.following.all()
+        instance = self.request.user
+        subscriptions = instance.subscriber.all()
         subscribers = User.objects.filter(
-            id__in=subscriptions.values('author')
+            id__in=subscriptions.values('author'),
         )
         serializer = self.get_serializer(subscribers, many=True)
         return response.Response(serializer.data)
