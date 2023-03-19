@@ -4,7 +4,7 @@ from django.shortcuts import redirect
 from rest_framework import viewsets, decorators, response, mixins, status, exceptions
 from django.urls import reverse
 from . import serializers
-from core import permissions
+from core import permissions, paginations
 
 User = get_user_model()
 
@@ -15,6 +15,7 @@ class UserViewSet(mixins.CreateModelMixin,
                   viewsets.GenericViewSet):
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
+    pagination_class = paginations.CustomPagination
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve', 'me'):
@@ -45,7 +46,7 @@ class UserViewSet(mixins.CreateModelMixin,
     )
     def set_password(self, request, *args, **kwargs):
         instance = self.request.user
-        serializer = self.get_serializer(self.request.data)
+        serializer = self.get_serializer(data=self.request.data)
         serializer.is_valid(raise_exception=True)
         curr_password = serializer.validated_data.get('current_password')
         if not instance.check_password(curr_password):
