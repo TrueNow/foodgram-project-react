@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from recipes.models import Tag, Ingredient, Recipe, IngredientAmount
-
+from drf_extra_fields.fields import Base64ImageField
 
 User = get_user_model()
 
@@ -106,15 +106,11 @@ class RecipeCreateSerializer(RecipeGetSerializer):
     )
     ingredients = IngridientAmoutCreateSerializer(many=True)
     cooking_time = serializers.IntegerField()
+    image = Base64ImageField()
 
     class Meta:
         model = Recipe
-        fields = (
-            'ingredients', 'tags',
-            'name',
-            # 'image',
-            'text', 'cooking_time'
-        )
+        fields = ('ingredients', 'tags', 'name', 'image', 'text', 'cooking_time')
         read_only_fields = ('author',)
 
     def to_representation(self, instance):
