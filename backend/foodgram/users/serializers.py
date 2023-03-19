@@ -28,6 +28,10 @@ class SignUpSerializer(serializers.ModelSerializer):
         password_validation.validate_password(value)
         return value
 
+    def to_representation(self, instance):
+        serializer = UserSerializer(instance)
+        return serializer.data
+
 
 class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
@@ -40,6 +44,8 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or request.user.is_anonymous:
             return False
+        if request.user == obj:
+            return None
         return request.user.subscriber.filter(author=obj).exists()
 
 

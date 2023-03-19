@@ -98,6 +98,10 @@ class RecipeCreateSerializer(RecipeGetSerializer):
             raise serializers.ValidationError('Время приготовления должно быть больше суток!')
         return cooking_time
 
+    def to_representation(self, instance):
+        serializer = RecipeGetSerializer(instance)
+        return serializer.data
+
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
     class Meta:
