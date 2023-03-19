@@ -1,17 +1,22 @@
 from django.contrib.auth import get_user_model, password_validation
 from rest_framework import serializers
-from api.serializers import RecipeGetSerializer
+from api.serializers import ShortRecipeSerializer
 from users import validators as users_validators
 
 User = get_user_model()
 
 
+class MetaUser(serializers.SerializerMetaclass):
+    model = User
+    fields = (
+        'email', 'username', 'first_name', 'last_name',
+    )
+
+
 class SignUpSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = (
-            'email', 'username', 'first_name', 'last_name', 'password'
-        )
+    class Meta(MetaUser):
+        fields = MetaUser.fields
+        fields += ('password',)
 
     @staticmethod
     def validate_username(value):
@@ -23,30 +28,33 @@ class SignUpSerializer(serializers.ModelSerializer):
         password_validation.validate_password(value)
         return value
 
+    def to_representation(self, instance):
+        serializer = UserSerializer(instance)
+        return serializer.data
+
 
 class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
-    class Meta:
-        model = User
-        fields = (
-            'email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed'
-        )
+    class Meta(MetaUser):
+        fields = MetaUser.fields
+        fields += ('id', 'is_subscribed')
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
         if not request or request.user.is_anonymous:
             return False
+        if request.user == obj:
+            return None
         return request.user.subscriber.filter(author=obj).exists()
 
 
 class SubscribeSerializer(UserSerializer):
-    recipes = RecipeGetSerializer(many=True, read_only=True)
+    recipes = ShortRecipeSerializer(many=True, read_only=True)
     recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
 
-    class Meta:
-        model = User
-        fields = UserSerializer.Meta.fields
+    class Meta(MetaUser):
+        fields = MetaUser.fields
         fields += ('recipes', 'recipes_count')
 
 

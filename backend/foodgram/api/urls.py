@@ -6,7 +6,7 @@ app_name = 'api'
 
 router_v1 = DefaultRouter()
 router_v1.register('tags', views.TagViewSet, basename='tags')
-router_v1.register('ingredients', views.IngredientAmountViewSet, basename='ingredients')
+router_v1.register('ingredients', views.IngredientViewSet, basename='ingredients')
 router_v1.register('recipes', views.RecipeViewSet, basename='recipes')
 
 
