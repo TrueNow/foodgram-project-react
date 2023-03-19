@@ -1,36 +1,38 @@
 from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
-from django_filters.rest_framework import DjangoFilterBackend
-from recipes.models import Tag, Ingredient, Recipe, Favorite, ShoppingCart, IngredientAmount
-from rest_framework import viewsets, decorators, response, status, exceptions, filters
-from . import serializers, filters as custom_filters
+from rest_framework import viewsets, decorators, response, status, exceptions
+from rest_framework.decorators import action
 
 from core import permissions
+from recipes import models
+from . import serializers, filters
+
 
 User = get_user_model()
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Tag.objects.all()
+    queryset = models.Tag.objects.all()
     serializer_class = serializers.TagSerializer
     permission_classes = (permissions.AllowAny,)
     pagination_class = None
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Ingredient.objects.all()
+    queryset = models.Ingredient.objects.all()
     serializer_class = serializers.IngredientSerializer
     permission_classes = (permissions.AllowAny,)
     pagination_class = None
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = filters.IngredientFilter
 
 
+@action(detail=True)
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
+    queryset = models.Recipe.objects.all()
     permission_classes = (permissions.IsOwnerOrAdminOrReadOnly,)
-    # filter_backends = (DjangoFilterBackend,)
-    # filter_class = custom_filters.RecipeFilter
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = filters.RecipeFilter
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
@@ -91,7 +93,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request, *args, **kwargs):
         instance = self.request.user
         shopping_cart = instance.shopping_cart.all()
-        recipes = Recipe.objects.filter(
+        recipes = models.Recipe.objects.filter(
             id__in=shopping_cart.values('recipe')
         )
         serializer = self.get_serializer(recipes, many=True)
