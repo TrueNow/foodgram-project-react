@@ -3,6 +3,7 @@ from rest_framework import serializers
 from recipes.models import Tag, Ingredient, Recipe, IngredientAmount
 from drf_extra_fields.fields import Base64ImageField
 
+
 User = get_user_model()
 
 
@@ -86,7 +87,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         return request.user.shopping_cart.filter(recipe=obj).exists()
 
 
-class IngridientAmoutCreateSerializer(serializers.ModelSerializer):
+class IngredientAmountCreateSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
     amount = serializers.IntegerField()
 
@@ -94,7 +95,8 @@ class IngridientAmoutCreateSerializer(serializers.ModelSerializer):
         model = IngredientAmount
         fields = ('id', 'amount')
 
-    def validate_amount(self, amount):
+    @staticmethod
+    def validate_amount(amount):
         if amount <= 0:
             raise serializers.ValidationError('Время приготовления должно быть >= 1!')
         return amount
@@ -104,7 +106,7 @@ class RecipeCreateSerializer(RecipeGetSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True
     )
-    ingredients = IngridientAmoutCreateSerializer(many=True)
+    ingredients = IngredientAmountCreateSerializer(many=True)
     cooking_time = serializers.IntegerField()
     image = Base64ImageField()
 
@@ -121,40 +123,25 @@ class RecipeCreateSerializer(RecipeGetSerializer):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
-        recipe.tags.set(tags)
 
-        obj_id = (
-            IngredientAmount.objects.latest('id').id + 1
-            if IngredientAmount.objects.all().exists()
-            else 0
-        )
-        temp_ingredients = list()
+        ingredient_amounts = list()
         for ingredient in ingredients:
-            ingredient_id = ingredient.get('id').id
+            ingredient_id = ingredient.get('id')
             amount = ingredient.get('amount')
+            obj = IngredientAmount.objects.filter(ingredient=ingredient_id, amount=amount)
+            if not obj.exists():
+                obj = IngredientAmount.objects.create(ingredient=ingredient_id, amount=amount)
+            ingredient_amounts.append(obj)
 
-            ingredient_obj = IngredientAmount.objects.filter(
-                ingredient_id=ingredient_id,
-                amount=amount
-            )
-
-            if not ingredient_obj.exists():
-                temp_ingredients.append(
-                    IngredientAmount(
-                        id=obj_id,
-                        recipe=recipe,
-                        ingredient_id=ingredient_id,
-                        amount=amount
-                    )
-                )
-                obj_id += 1
-
-        IngredientAmount.objects.bulk_create(
-            temp_ingredients, batch_size=999
-        )
-        # recipe.image = image
+        recipe.tags.set(tags)
+        recipe.ingredients.set(ingredient_amounts)
         recipe.save()
         return recipe
+
+    def validate_name(self, name):
+        if Recipe.objects.filter(author=self.context.get('request').user, name=name).exists():
+            raise serializers.ValidationError('Рецепт с таким названием уже существует!')
+        return name
 
     @staticmethod
     def validate_cooking_time(cooking_time):
@@ -176,7 +163,8 @@ class RecipeCreateSerializer(RecipeGetSerializer):
             ingredients_set.append(ingredient_obj.id)
         return ingredients
 
-    def validate_tags(self, tags):
+    @staticmethod
+    def validate_tags(tags):
         if len(tags) > len(set(tags)):
             raise serializers.ValidationError('Теги не должны повторяться!')
         return tags
