@@ -131,21 +131,19 @@ class RecipeCreateSerializer(RecipeGetSerializer):
         return serializer.data
 
     def create(self, validated_data):
-        ingredients = validated_data.pop('ingredients')
+        ingredient_amounts = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
+        ingredients = list()
 
-        ingredient_amounts = list()
-        for ingredient in ingredients:
-            ingredient_id = ingredient.get('id')
-            amount = ingredient.get('amount')
-            obj = IngredientAmount.objects.filter(ingredient=ingredient_id, amount=amount)
-            if not obj.exists():
-                obj = IngredientAmount.objects.create(ingredient=ingredient_id, amount=amount)
-            ingredient_amounts.append(obj)
+        for ingredient_amount in ingredient_amounts:
+            ingredient = ingredient_amount.get('id')
+            amount = ingredient_amount.get('amount')
+            IngredientAmount.objects.create(recipe=recipe, ingredient=ingredient, amount=amount)
+            ingredients.append(ingredient.id)
 
         recipe.tags.set(tags)
-        recipe.ingredients.set(ingredient_amounts)
+        recipe.ingredients.set(ingredients)
         recipe.save()
         return recipe
 
