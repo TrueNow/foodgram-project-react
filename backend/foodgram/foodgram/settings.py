@@ -81,8 +81,11 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'core.paginations.CustomPagination',
 }
 
+AUTH_USER_MODEL = 'users.User'
+
 DJOSER = {
-    'LOGIN_FIELD': 'email'
+    'LOGIN_FIELD': 'email',
+    'SEND_ACTIVATION_EMAIL': False,
 }
 
 
@@ -166,5 +169,3 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-AUTH_USER_MODEL = 'users.User'
