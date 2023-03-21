@@ -41,27 +41,6 @@ class Ingredient(models.Model):
         return f'{self.name}, {self.measurement_unit}'
 
 
-class IngredientAmount(models.Model):
-    ingredient = models.ForeignKey(
-        to=Ingredient, verbose_name='Ингридиент', related_name='amount', on_delete=models.CASCADE
-    )
-    amount = models.IntegerField(verbose_name='Количество')
-
-    class Meta:
-        verbose_name = 'Ингредиент (кол-во)'
-        verbose_name_plural = 'Ингредиенты (кол-во)'
-        ordering = ('ingredient__name',)
-        constraints = [
-            models.UniqueConstraint(
-                fields=['ingredient', 'amount'],
-                name='unique_ingredient_amount'
-            )
-        ]
-
-    def __str__(self):
-        return f'{self.ingredient.name} {self.amount} {self.ingredient.measurement_unit}'
-
-
 class Recipe(models.Model):
     author = models.ForeignKey(
         to=User, verbose_name='Автор', related_name='recipes', on_delete=models.CASCADE, blank=False
@@ -72,7 +51,7 @@ class Recipe(models.Model):
     )
     text = models.TextField(verbose_name='Описание', blank=False)
     ingredients = models.ManyToManyField(
-        to=IngredientAmount, verbose_name='Список ингредиентов', blank=False
+        to=Ingredient, verbose_name='Список ингредиентов', blank=False, through='IngredientAmount'
     )
     tags = models.ManyToManyField(
         to=Tag, verbose_name='Список тегов', blank=False
@@ -100,6 +79,32 @@ class Recipe(models.Model):
 
     def __str__(self):
         return f'Рецепт "{self.name}" от {self.author}'
+
+
+class IngredientAmount(models.Model):
+    recipe = models.ForeignKey(
+        to=Recipe, verbose_name='Рецепт', related_name='ingredient_list', on_delete=models.CASCADE
+    )
+    ingredient = models.ForeignKey(
+        to=Ingredient, verbose_name='Ингридиент', on_delete=models.CASCADE
+    )
+    amount = models.PositiveIntegerField(
+        verbose_name='Количество', validators=[validators.MinValueValidator(1, message='Минимальное количество = 1.')]
+    )
+
+    class Meta:
+        verbose_name = 'Ингредиент (кол-во)'
+        verbose_name_plural = 'Ингредиенты (кол-во)'
+        ordering = ('ingredient__name',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'ingredient'],
+                name='unique_ingredient_in_recipe'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.ingredient.name} {self.amount} {self.ingredient.measurement_unit}'
 
 
 class Favorite(models.Model):
@@ -130,7 +135,7 @@ class ShoppingCart(models.Model):
         to=User, verbose_name='Пользователь', related_name='shopping_cart', on_delete=models.CASCADE
     )
     recipe = models.ForeignKey(
-        to=Recipe, verbose_name='Рецепт', on_delete=models.CASCADE
+        to=Recipe, verbose_name='Рецепт', related_name='shopping_cart', on_delete=models.CASCADE
     )
 
     class Meta:
