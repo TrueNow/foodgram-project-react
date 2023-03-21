@@ -5,7 +5,6 @@ from django.db.models import Sum
 from django.db.utils import IntegrityError
 from django.http import HttpResponse
 from rest_framework import viewsets, decorators, response, status, exceptions
-from rest_framework.decorators import action
 
 from core import permissions
 from recipes import models
@@ -31,7 +30,6 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_class = filters.IngredientFilter
 
 
-@action(detail=True)
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = models.Recipe.objects.all()
     permission_classes = (permissions.IsOwnerOrAdminOrReadOnly,)
