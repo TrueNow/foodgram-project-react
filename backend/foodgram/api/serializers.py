@@ -23,6 +23,13 @@ class UsersCreateSerializer(serializers.ModelSerializer):
         validators.validate_password(value)
         return value
 
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = self.save()
+        user.set_password(password)
+        user.save()
+        return user
+
     def to_representation(self, instance):
         serializer = UserGetSerializer(instance)
         return serializer.data
@@ -53,6 +60,15 @@ class UsersChangePasswordSerializer(serializers.Serializer):
     def validate_new_password(value):
         validators.validate_password(value)
         return value
+
+    def update(self, instance, validated_data):
+        curr_password = validated_data.get('current_password')
+        if not instance.check_password(curr_password):
+            raise serializers.ValidationError('Неверный пароль!')
+        new_password = validated_data.get('new_password')
+        instance.set_password(new_password)
+        instance.save()
+        return instance
 
 
 class IngredientGetSerializer(serializers.ModelSerializer):
@@ -218,6 +234,7 @@ class SubscribeSerializer(UserGetSerializer):
     recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
 
     class Meta:
+        model = User
         fields = (
             'email', 'username', 'first_name', 'last_name', 'recipes', 'recipes_count'
         )

@@ -38,12 +38,6 @@ class UserViewSet(mixins.CreateModelMixin,
             return redirect(reverse('users:users-me'))
         return super().retrieve(request, *args, **kwargs)
 
-    def perform_create(self, serializer):
-        password = serializer.validated_data.pop('password')
-        user = serializer.save()
-        user.set_password(password)
-        user.save()
-
     @decorators.action(
         methods=['get'], detail=False, url_path='me', url_name='me',
         permission_classes=[permissions.IsAuthenticated]
@@ -51,7 +45,8 @@ class UserViewSet(mixins.CreateModelMixin,
     def me(self, request, *args, **kwargs):
         instance = self.request.user
         serializer = self.get_serializer(instance)
-        return response.Response(serializer.data)
+        headers = self.get_success_headers(serializer.data)
+        return response.Response(data=serializer.data, status=status.HTTP_200_OK, headers=headers)
 
     @decorators.action(
         methods=['post'], detail=False, url_path='set_password', url_name='set_password',
@@ -60,18 +55,9 @@ class UserViewSet(mixins.CreateModelMixin,
     def set_password(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=self.request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_set_password(serializer)
+        serializer.save(commit=True)
         headers = self.get_success_headers(serializer.data)
         return response.Response(status=status.HTTP_204_NO_CONTENT, headers=headers)
-
-    def perform_set_password(self, serializer):
-        instance = self.request.user
-        curr_password = serializer.validated_data.get('current_password')
-        if not instance.check_password(curr_password):
-            raise exceptions.ValidationError('Неверный пароль!')
-        new_password = serializer.validated_data.get('new_password')
-        instance.set_password(new_password)
-        instance.save()
 
     @decorators.action(
         methods=['get'], detail=False, url_path='subscriptions', url_name='subscriptions',
@@ -84,7 +70,8 @@ class UserViewSet(mixins.CreateModelMixin,
             id__in=subscriptions.values('author'),
         )
         serializer = self.get_serializer(subscribers, many=True)
-        return response.Response(serializer.data)
+        headers = self.get_success_headers(serializer.data)
+        return response.Response(data=serializer.data, status=status.HTTP_200_OK, headers=headers)
 
     def _create_subscribe(self, record):
         author = self.get_object()
