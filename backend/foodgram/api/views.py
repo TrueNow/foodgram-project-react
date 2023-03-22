@@ -33,8 +33,11 @@ class UserViewSet(mixins.CreateModelMixin,
             return serializers.UsersChangePasswordSerializer
         return serializers.UsersCreateSerializer
 
+    def get_user(self):
+        return self.request.user
+
     def retrieve(self, request, *args, **kwargs):
-        if self.request.user == self.get_object():
+        if self.get_user() == self.get_object():
             return redirect(reverse('users:users-me'))
         return super().retrieve(request, *args, **kwargs)
 
@@ -43,7 +46,7 @@ class UserViewSet(mixins.CreateModelMixin,
         permission_classes=[permissions.IsAuthenticated]
     )
     def me(self, request, *args, **kwargs):
-        instance = self.request.user
+        instance = self.get_user()
         serializer = self.get_serializer(instance)
         headers = self.get_success_headers(serializer.data)
         return response.Response(data=serializer.data, status=status.HTTP_200_OK, headers=headers)
@@ -63,7 +66,7 @@ class UserViewSet(mixins.CreateModelMixin,
         permission_classes=[permissions.IsAuthenticated]
     )
     def subscriptions(self, request, *args, **kwargs):
-        instance = self.request.user
+        instance = self.get_user()
         subscriptions = instance.subscriber.all()
         subscribers = User.objects.filter(
             id__in=subscriptions.values('author'),
@@ -94,7 +97,7 @@ class UserViewSet(mixins.CreateModelMixin,
         permission_classes=[permissions.IsAuthenticated]
     )
     def subscribe(self, request, *args, **kwargs):
-        instance = self.request.user
+        instance = self.get_user()
         record = getattr(instance, 'subscriber')
         if self.request.method == 'POST':
             return self._create_subscribe(record)
@@ -124,6 +127,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = filters.RecipeFilter
 
+    def get_user(self):
+        return self.request.user
+
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return serializers.RecipeGetSerializer
@@ -134,7 +140,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return serializers.RecipeCreateSerializer
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        serializer.save(author=self.get_user())
 
     def _create_in_favorite_or_shopping_cart(self, record):
         recipe = self.get_object()
@@ -181,12 +187,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=[permissions.IsAuthenticated]
     )
     def download_shopping_cart(self, request, *args, **kwargs):
-        user = request.user
+        user = self.get_user()
         if not user.shopping_cart.exists():
             return response.Response(status=status.HTTP_400_BAD_REQUEST)
 
         ingredients = models.IngredientAmount.objects.filter(
-            recipe__shopping_cart__user=request.user
+            recipe__shopping_cart__user=user
         ).values(
             'ingredient__name',
             'ingredient__measurement_unit'
