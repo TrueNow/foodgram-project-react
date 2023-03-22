@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
@@ -23,6 +24,7 @@ class UsersCreateSerializer(serializers.ModelSerializer):
         validators.validate_password(value)
         return value
 
+    @transaction.atomic
     def create(self, validated_data):
         password = validated_data.pop('password')
         user = User.objects.create(**validated_data)
@@ -72,6 +74,7 @@ class UsersChangePasswordSerializer(serializers.ModelSerializer):
         validators.validate_password(value)
         return value
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         password = validated_data.get('new_password')
         instance.set_password(password)
@@ -199,6 +202,7 @@ class RecipeCreateSerializer(RecipeGetSerializer):
             raise serializers.ValidationError('Время приготовления должно быть больше суток!')
         return cooking_time
 
+    @transaction.atomic
     def create(self, validated_data):
         ingredient_amounts = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
