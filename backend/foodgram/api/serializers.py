@@ -217,16 +217,11 @@ class RecipeCreateSerializer(RecipeGetSerializer):
 
 
 class ShoppingCartDownloadSerializer(serializers.ModelSerializer):
-    ingredients = serializers.SerializerMethodField()
+    ingredients = IngredientAmountGetSerializer(many=True, source='ingredient_list')
 
     class Meta:
         model = Recipe
         fields = ('ingredients',)
-
-    @staticmethod
-    def get_ingredients(obj):
-        ingredients = IngredientAmount.objects.filter(recipe=obj)
-        return IngredientAmountGetSerializer(ingredients, many=True).data
 
 
 class SubscribeSerializer(UserGetSerializer):
