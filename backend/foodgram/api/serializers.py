@@ -25,7 +25,7 @@ class UsersCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop('password')
-        user = self.save()
+        user = User.objects.create(**validated_data)
         user.set_password(password)
         user.save()
         return user
@@ -49,12 +49,23 @@ class UserGetSerializer(serializers.ModelSerializer):
         return obj.following.get(user=request.user).exists()
 
 
-class UsersChangePasswordSerializer(serializers.Serializer):
+class UsersChangePasswordSerializer(serializers.ModelSerializer):
     new_password = serializers.CharField(max_length=128, required=True, style={'input_type': 'password'})
     current_password = serializers.CharField(max_length=128, required=True, style={'input_type': 'password'})
 
     class Meta:
+        model = User
         fields = ('new_password', 'current_password')
+
+    def get_object(self):
+        self.instance = self.context.get('request').user
+        return self.instance
+
+    def validate_current_password(self, value):
+        instance = self.get_object()
+        if not instance.check_password(value):
+            raise serializers.ValidationError('Неверный пароль!')
+        return value
 
     @staticmethod
     def validate_new_password(value):
@@ -62,11 +73,8 @@ class UsersChangePasswordSerializer(serializers.Serializer):
         return value
 
     def update(self, instance, validated_data):
-        curr_password = validated_data.get('current_password')
-        if not instance.check_password(curr_password):
-            raise serializers.ValidationError('Неверный пароль!')
-        new_password = validated_data.get('new_password')
-        instance.set_password(new_password)
+        password = validated_data.get('new_password')
+        instance.set_password(password)
         instance.save()
         return instance
 
@@ -203,7 +211,13 @@ class RecipeCreateSerializer(RecipeGetSerializer):
             else 0
         )
         for ingredient_amount in ingredient_amounts:
-            ingredients.append(IngredientAmount(id=obj_id, recipe=recipe, **ingredient_amount))
+            kwargs = {
+                'id': obj_id,
+                'recipe': recipe,
+                'ingredient': ingredient_amount.get('id'),
+                'amount': ingredient_amount.get('amount'),
+            }
+            ingredients.append(IngredientAmount(**kwargs))
             obj_id += 1
 
         IngredientAmount.objects.bulk_create(ingredients)

@@ -55,9 +55,8 @@ class UserViewSet(mixins.CreateModelMixin,
     def set_password(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=self.request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(commit=True)
-        headers = self.get_success_headers(serializer.data)
-        return response.Response(status=status.HTTP_204_NO_CONTENT, headers=headers)
+        serializer.save()
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @decorators.action(
         methods=['get'], detail=False, url_path='subscriptions', url_name='subscriptions',
