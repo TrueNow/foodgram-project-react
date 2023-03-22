@@ -1,6 +1,11 @@
 from rest_framework import exceptions
+from django.contrib.auth import password_validation
 
-from .models import BANNED_USERNAMES
+BANNED_USERNAMES = (
+    'me', 'set_password',
+)
+
+validate_password = password_validation.validate_password
 
 
 def validate_username(value):
