@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -78,21 +77,13 @@ class UserViewSet(mixins.CreateModelMixin,
         headers = self.get_success_headers(serializer.data)
         return response.Response(data=serializer.data, status=status.HTTP_200_OK, headers=headers)
 
-    def _create_subscribe(self):
-        data = {
-            'subscriber': self.get_user(),
-            'author': self.get_object()
-        }
+    def _create_subscribe(self, data):
         serializer = self.get_serializer()
         instance = serializer.create(data)
         response_data = serializer.to_representation(instance=instance)
         return response.Response(response_data, status=status.HTTP_201_CREATED)
 
-    def _delete_subscribe(self):
-        data = {
-            'subscriber': self.get_user(),
-            'author': self.get_object()
-        }
+    def _delete_subscribe(self, data):
         serializer = self.get_serializer()
         serializer.delete(data)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
@@ -102,10 +93,14 @@ class UserViewSet(mixins.CreateModelMixin,
         permission_classes=[permissions.IsAuthenticated]
     )
     def subscribe(self, request, *args, **kwargs):
+        data = {
+            'subscriber': self.get_user(),
+            'author': self.get_object()
+        }
         if self.request.method == 'POST':
-            return self._create_subscribe()
+            return self._create_subscribe(data)
         elif self.request.method == 'DELETE':
-            return self._delete_subscribe()
+            return self._delete_subscribe(data)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -166,30 +161,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(author=self.get_user())
 
-    def _create_in_favorite_or_shopping_cart(self):
-        data = {
-            'user': self.get_user(),
-            'recipe': self.get_object()
-        }
+    def _create_instance(self, data):
         serializer = self.get_serializer()
         instance = serializer.create(data)
         response_data = serializer.to_representation(instance=instance)
         return response.Response(response_data, status=status.HTTP_201_CREATED)
 
-    def _delete_in_favorite_or_shopping_cart(self):
-        data = {
-            'user': self.get_user(),
-            'recipe': self.get_object()
-        }
+    def _delete_instance(self, data):
         serializer = self.get_serializer()
         serializer.delete(data)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     def _favorite_or_shopping_cart_view(self):
+        data = {
+            'user': self.get_user(),
+            'recipe': self.get_object()
+        }
         if self.request.method == 'POST':
-            return self._create_in_favorite_or_shopping_cart()
+            return self._create_instance(data)
         if self.request.method == 'DELETE':
-            return self._delete_in_favorite_or_shopping_cart()
+            return self._delete_instance(data)
 
     @decorators.action(
         methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite',
@@ -213,7 +204,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def download_shopping_cart(self, request, *args, **kwargs):
         user = self.get_user()
         if not user.shopping_cart.exists():
-            return response.Response(status=status.HTTP_400_BAD_REQUEST)
+            raise exceptions.ValidationError('В списке покупок нет рецептов.')
 
         ingredients = models.IngredientAmount.objects.filter(
             recipe__shopping_cart__user=user
@@ -222,9 +213,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'ingredient__measurement_unit'
         ).annotate(amount=Sum('amount'))
 
+        filename, shopping_list = self.create_shopping_list(ingredients)
+
+        resp = HttpResponse(shopping_list, content_type='text/plain')
+        resp['Content-Disposition'] = f'attachment; filename={filename}'
+        return resp
+
+    def create_shopping_list(self, ingredients):
         today = datetime.today()
+        user = self.get_user()
         shopping_list = (
-            f'Список покупок для: {user.get_full_name()}\n\n'
+            f'Список покупок для: {user.get_full_name()}\n'
             f'Дата: {today:%Y-%m-%d}\n\n'
         )
         shopping_list += '\n'.join([
@@ -234,8 +233,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
             for ingredient in ingredients
         ])
         shopping_list += f'\n\nFoodgram ({today:%Y})'
-
         filename = f'{user.username}_shopping_list.txt'
-        resp = HttpResponse(shopping_list, content_type='text/plain')
-        resp['Content-Disposition'] = f'attachment; filename={filename}'
-        return resp
+        return filename, shopping_list
