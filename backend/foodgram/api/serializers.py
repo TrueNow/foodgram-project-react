@@ -270,38 +270,55 @@ class SubscriberGetSerializer(serializers.ModelSerializer):
         )
 
 
-class FavoriteOrShoppingCreateSerializer(serializers.ModelSerializer):
+class FavoriteOrShoppingOrSubscribeCreateSerializer(serializers.ModelSerializer):
+    ERRORS_TEXT = {}
+
     def create(self, validated_data):
         try:
             instance = self.Meta.model.objects.create(**validated_data)
         except IntegrityError:
-            raise serializers.ValidationError({'errors': 'Рецепт уже добавлен!'})
+            raise serializers.ValidationError({'errors': self.ERRORS_TEXT.get('create')})
         return instance
 
     def delete(self, validated_data):
         try:
             self.Meta.model.objects.get(**validated_data).delete()
         except self.Meta.model.DoesNotExist:
-            raise serializers.ValidationError({'errors': 'Рецепта не найдено.'})
+            raise serializers.ValidationError({'errors': self.ERRORS_TEXT.get('delete')})
         return
 
     def to_representation(self, instance):
         return RecipeShortGetSerializer(instance=instance.recipe).data
 
 
-class FavoriteCreateSerializer(FavoriteOrShoppingCreateSerializer):
+class FavoriteCreateSerializer(FavoriteOrShoppingOrSubscribeCreateSerializer):
+    ERRORS_TEXT = {
+        'create': 'Рецепт уже в избранном.',
+        'delete': 'Невозможно убрать рецепт. Рецепта нет в избранном.'
+    }
+
     class Meta:
         model = Favorite
         fields = ('user', 'recipe')
 
 
-class ShoppingCreateSerializer(FavoriteOrShoppingCreateSerializer):
+class ShoppingCreateSerializer(FavoriteOrShoppingOrSubscribeCreateSerializer):
+    ERRORS_TEXT = {
+        'create': 'Рецепт уже в списке покупок.',
+        'delete': 'Невозможно убрать рецепт. Рецепта нет в списке покупок.'
+    }
+
     class Meta:
         model = ShoppingCart
         fields = ('user', 'recipe')
 
 
-class SubscriptionCreateSerializer(FavoriteOrShoppingCreateSerializer):
+class SubscriptionCreateSerializer(FavoriteOrShoppingOrSubscribeCreateSerializer):
+    ERRORS_TEXT = {
+        'create': 'Вы уже подписаны на этого пользователя.',
+        'delete': 'Невозможно отменить подписку. Вы не были подписаны на этого автора.'
+    }
+
     class Meta:
         model = Subscription
         fields = ('subscriber', 'author')
