@@ -139,6 +139,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return serializers.ShoppingCartDownloadSerializer
         return serializers.RecipeCreateSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.request.user.is_anonymous:
+            return context
+
+        data = {'user': self.get_user()}
+        if self.kwargs:
+            data['recipe'] = self.get_object()
+
+        add_context_data = {
+            'favorite_recipes': models.Favorite,
+            'shopping_recipes': models.ShoppingCart
+        }
+        for name, model in add_context_data.items():
+            context[name] = set(
+                model.objects.filter(**data).values_list('recipe_id', flat=True)
+            )
+        return context
+
     def perform_create(self, serializer):
         serializer.save(author=self.get_user())
 

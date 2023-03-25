@@ -131,10 +131,10 @@ class RecipeShortGetSerializer(serializers.ModelSerializer):
 
 class RecipeGetSerializer(serializers.ModelSerializer):
     tags = TagGetSerializer(many=True, read_only=True)
-    ingredients = serializers.SerializerMethodField()
+    ingredients = serializers.SerializerMethodField(read_only=True)
     author = UserGetSerializer(read_only=True)
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField(read_only=True)
+    is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Recipe
@@ -143,24 +143,19 @@ class RecipeGetSerializer(serializers.ModelSerializer):
             'author', 'name', 'image', 'text', 'cooking_time'
         )
 
-    def get_ingredients(self, obj):
+    @staticmethod
+    def get_ingredients(obj):
         ingredients = IngredientAmount.objects.filter(recipe=obj)
         return IngredientAmountGetSerializer(ingredients, many=True).data
 
-    def _get_is_param(self, obj, param):
-        request = self.context.get('request')
-        if not request or request.user.is_anonymous:
-            return False
-        return obj in request.user.param
-
     def get_is_favorited(self, obj):
-        return self._get_is_param(obj, 'favorite')
+        return obj.id in self.context.get('favorite_recipes', [])
 
     def get_is_in_shopping_cart(self, obj):
-        return self._get_is_param(obj, 'shopping_cart')
+        return obj.id in self.context.get('shopping_recipes', [])
 
 
-class RecipeCreateSerializer(RecipeGetSerializer):
+class RecipeCreateSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
     ingredients = IngredientAmountCreateSerializer(many=True)
     cooking_time = serializers.IntegerField()
