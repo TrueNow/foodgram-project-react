@@ -27,11 +27,14 @@ class UserViewSet(mixins.CreateModelMixin,
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve', 'me'):
             return serializers.UserGetSerializer
-        elif self.action in ('subscriptions', 'subscribe'):
-            return serializers.SubscribeSerializer
+        elif self.action in ('create',):
+            return serializers.UsersCreateSerializer
+        elif self.action in ('subscribe',):
+            return serializers.SubscriptionCreateSerializer
+        elif self.action in ('subscriptions',):
+            return serializers.SubscriberGetSerializer
         elif self.action in ('set_password',):
             return serializers.UsersChangePasswordSerializer
-        return serializers.UsersCreateSerializer
 
     def get_user(self):
         return self.request.user
@@ -75,21 +78,23 @@ class UserViewSet(mixins.CreateModelMixin,
         headers = self.get_success_headers(serializer.data)
         return response.Response(data=serializer.data, status=status.HTTP_200_OK, headers=headers)
 
-    def _create_subscribe(self, record):
-        author = self.get_object()
-        try:
-            record.create(author=author)
-        except IntegrityError:
-            raise exceptions.ValidationError({'errors': 'Вы уже подписаны.'})
-        serializer = self.get_serializer(author)
-        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+    def _create_subscribe(self):
+        data = {
+            'subscriber': self.get_user(),
+            'author': self.get_object()
+        }
+        serializer = self.get_serializer()
+        instance = serializer.create(data)
+        response_data = serializer.to_representation(instance=instance)
+        return response.Response(response_data, status=status.HTTP_201_CREATED)
 
-    def _delete_subscribe(self, record):
-        author = self.get_object()
-        record = record.filter(author=author)
-        if not record.exists():
-            raise exceptions.ValidationError({'errors': 'Вы не были подписаны.'})
-        record.delete()
+    def _delete_subscribe(self):
+        data = {
+            'subscriber': self.get_user(),
+            'author': self.get_object()
+        }
+        serializer = self.get_serializer()
+        serializer.delete(data)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @decorators.action(
@@ -97,12 +102,10 @@ class UserViewSet(mixins.CreateModelMixin,
         permission_classes=[permissions.IsAuthenticated]
     )
     def subscribe(self, request, *args, **kwargs):
-        instance = self.get_user()
-        record = getattr(instance, 'subscriber')
         if self.request.method == 'POST':
-            return self._create_subscribe(record)
+            return self._create_subscribe()
         elif self.request.method == 'DELETE':
-            return self._delete_subscribe(record)
+            return self._delete_subscribe()
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -154,9 +157,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'shopping_recipes': models.ShoppingCart
         }
         for name, model in add_context_data.items():
-            context[name] = set(
-                model.objects.filter(**data).values_list('recipe_id', flat=True)
-            )
+            context[name] = set(model.objects.filter(**data).values_list('recipe_id', flat=True))
         return context
 
     def perform_create(self, serializer):

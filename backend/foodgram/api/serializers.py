@@ -3,6 +3,7 @@ from django.db import transaction, IntegrityError
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
+from users.models import Subscription
 from recipes.models import Ingredient, IngredientAmount, Recipe, Tag, Favorite, ShoppingCart
 from . import validators
 
@@ -258,7 +259,7 @@ class ShoppingCartDownloadSerializer(serializers.ModelSerializer):
         fields = ('ingredients',)
 
 
-class SubscribeSerializer(serializers.ModelSerializer):
+class SubscriberGetSerializer(serializers.ModelSerializer):
     recipes = RecipeShortGetSerializer(many=True, read_only=True)
     recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
 
@@ -298,3 +299,12 @@ class ShoppingCreateSerializer(FavoriteOrShoppingCreateSerializer):
     class Meta:
         model = ShoppingCart
         fields = ('user', 'recipe')
+
+
+class SubscriptionCreateSerializer(FavoriteOrShoppingCreateSerializer):
+    class Meta:
+        model = Subscription
+        fields = ('subscriber', 'author')
+
+    def to_representation(self, instance):
+        return SubscriberGetSerializer(instance=instance.author).data
