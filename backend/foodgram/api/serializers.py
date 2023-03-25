@@ -260,7 +260,7 @@ class ShoppingCartDownloadSerializer(serializers.ModelSerializer):
 
 
 class SubscriberGetSerializer(serializers.ModelSerializer):
-    recipes = RecipeShortGetSerializer(many=True, read_only=True)
+    recipes = serializers.SerializerMethodField(read_only=True)
     recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
 
     class Meta:
@@ -268,6 +268,11 @@ class SubscriberGetSerializer(serializers.ModelSerializer):
         fields = (
             'email', 'username', 'first_name', 'last_name', 'recipes', 'recipes_count'
         )
+
+    def get_recipes(self, obj):
+        recipes_limit = self.context.get('request').query_params.get('recipes_limit')
+        recipes = obj.recipes.all()[:int(recipes_limit)]
+        return RecipeShortGetSerializer(recipes, many=True).data
 
 
 class FavoriteOrShoppingOrSubscribeCreateSerializer(serializers.ModelSerializer):
