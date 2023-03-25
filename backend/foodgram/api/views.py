@@ -131,13 +131,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self.request.user
 
     def get_serializer_class(self):
+        print(self.action)
         if self.action in ('list', 'retrieve'):
             return serializers.RecipeGetSerializer
+        elif self.action in ('create', 'update', 'partial_update'):
+            return serializers.RecipeCreateSerializer
         elif self.action in ('favorite', 'shopping_cart'):
             return serializers.RecipeShortGetSerializer
         elif self.action in ('download_shopping_cart',):
             return serializers.ShoppingCartDownloadSerializer
-        return serializers.RecipeCreateSerializer
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -159,6 +161,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return context
 
     def perform_create(self, serializer):
+        serializer.save(author=self.get_user())
+
+    def perform_update(self, serializer):
         serializer.save(author=self.get_user())
 
     def _create_in_favorite_or_shopping_cart(self, record):

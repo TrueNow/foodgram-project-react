@@ -197,32 +197,53 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Время приготовления должно быть больше суток!')
         return cooking_time
 
-    @transaction.atomic
-    def create(self, validated_data):
-        ingredient_amounts = validated_data.pop('ingredients')
-        tags = validated_data.pop('tags')
-        recipe = Recipe.objects.create(**validated_data)
-
-        ingredients = list()
+    @staticmethod
+    def _ingredients(instance, ingredients):
+        create_ingredients = list()
         obj_id = (
             IngredientAmount.objects.latest('id').id + 1
             if IngredientAmount.objects.all().exists()
             else 0
         )
-        for ingredient_amount in ingredient_amounts:
+        for ingredient in ingredients:
             kwargs = {
                 'id': obj_id,
-                'recipe': recipe,
-                'ingredient': ingredient_amount.get('id'),
-                'amount': ingredient_amount.get('amount'),
+                'recipe': instance,
+                'ingredient': ingredient.get('id'),
+                'amount': ingredient.get('amount'),
             }
-            ingredients.append(IngredientAmount(**kwargs))
+            create_ingredients.append(IngredientAmount(**kwargs))
             obj_id += 1
 
-        IngredientAmount.objects.bulk_create(ingredients)
-        recipe.tags.set(tags)
-        recipe.save()
-        return recipe
+        IngredientAmount.objects.bulk_create(create_ingredients)
+
+    @transaction.atomic
+    def create(self, validated_data):
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        instance = super().create(validated_data)
+        instance.tags.set(tags)
+        self._ingredients(instance, ingredients)
+
+        instance.save()
+        return instance
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        tags = validated_data.get('tags')
+        if tags:
+            tags = validated_data.pop('tags')
+            instance.tags.set(tags)
+
+        ingredients = validated_data.get('ingredients')
+        if ingredients:
+            ingredients = validated_data.pop('ingredients')
+            instance.ingredients.clear()
+            self._ingredients(instance, ingredients)
+            instance.save()
+
+        instance = super().update(instance, validated_data)
+        return instance
 
     def to_representation(self, instance):
         serializer = RecipeGetSerializer(instance)
