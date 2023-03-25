@@ -131,13 +131,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self.request.user
 
     def get_serializer_class(self):
-        print(self.action)
         if self.action in ('list', 'retrieve'):
             return serializers.RecipeGetSerializer
         elif self.action in ('create', 'update', 'partial_update'):
             return serializers.RecipeCreateSerializer
         elif self.action in ('favorite', 'shopping_cart'):
-            return serializers.RecipeShortGetSerializer
+            return serializers.FavoriteCreateSerializer
         elif self.action in ('download_shopping_cart',):
             return serializers.ShoppingCartDownloadSerializer
 
@@ -166,30 +165,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(author=self.get_user())
 
-    def _create_in_favorite_or_shopping_cart(self, record):
-        recipe = self.get_object()
-        try:
-            record.create(recipe=recipe)
-        except IntegrityError:
-            raise exceptions.ValidationError({'errors': 'Рецепт уже добавлен!'})
-        serializer = self.get_serializer(recipe)
-        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+    def _create_in_favorite_or_shopping_cart(self):
+        data = {
+            'user': self.get_user(),
+            'recipe': self.get_object()
+        }
+        serializer = self.get_serializer()
+        instance = serializer.create(data)
+        response_data = serializer.to_representation(instance=instance)
+        return response.Response(response_data, status=status.HTTP_201_CREATED)
 
-    def _delete_in_favorite_or_shopping_cart(self, record):
-        recipe = self.get_object()
-        record = record.filter(recipe=recipe)
-        if not record.exists():
-            raise exceptions.ValidationError({'errors': 'Рецепта не найдено.'})
-        record.delete()
+    def _delete_in_favorite_or_shopping_cart(self):
+        data = {
+            'user': self.get_user(),
+            'recipe': self.get_object()
+        }
+        serializer = self.get_serializer()
+        serializer.delete(data)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     def _favorite_or_shopping_cart_view(self):
-        instance = self.request.user
-        record = getattr(instance, self.action)
         if self.request.method == 'POST':
-            return self._create_in_favorite_or_shopping_cart(record)
+            return self._create_in_favorite_or_shopping_cart()
         if self.request.method == 'DELETE':
-            return self._delete_in_favorite_or_shopping_cart(record)
+            return self._delete_in_favorite_or_shopping_cart()
 
     @decorators.action(
         methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite',

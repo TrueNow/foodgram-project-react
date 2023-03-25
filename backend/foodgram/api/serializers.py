@@ -1,9 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-from recipes.models import Ingredient, IngredientAmount, Recipe, Tag
+from recipes.models import Ingredient, IngredientAmount, Recipe, Tag, Favorite, ShoppingCart
 from . import validators
 
 User = get_user_model()
@@ -258,7 +258,7 @@ class ShoppingCartDownloadSerializer(serializers.ModelSerializer):
         fields = ('ingredients',)
 
 
-class SubscribeSerializer(UserGetSerializer):
+class SubscribeSerializer(serializers.ModelSerializer):
     recipes = RecipeShortGetSerializer(many=True, read_only=True)
     recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
 
@@ -267,3 +267,34 @@ class SubscribeSerializer(UserGetSerializer):
         fields = (
             'email', 'username', 'first_name', 'last_name', 'recipes', 'recipes_count'
         )
+
+
+class FavoriteOrShoppingCreateSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        try:
+            instance = self.Meta.model.objects.create(**validated_data)
+        except IntegrityError:
+            raise serializers.ValidationError({'errors': 'Рецепт уже добавлен!'})
+        return instance
+
+    def delete(self, validated_data):
+        try:
+            self.Meta.model.objects.get(**validated_data).delete()
+        except self.Meta.model.DoesNotExist:
+            raise serializers.ValidationError({'errors': 'Рецепта не найдено.'})
+        return
+
+    def to_representation(self, instance):
+        return RecipeShortGetSerializer(instance=instance.recipe).data
+
+
+class FavoriteCreateSerializer(FavoriteOrShoppingCreateSerializer):
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe')
+
+
+class ShoppingCreateSerializer(FavoriteOrShoppingCreateSerializer):
+    class Meta:
+        model = ShoppingCart
+        fields = ('user', 'recipe')
