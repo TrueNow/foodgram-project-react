@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import Favorite, Ingredient, IngredientAmount, Recipe, Tag, ShoppingCart
+from .models import (
+    Favorite, Ingredient, IngredientAmount, Recipe, ShoppingCart, Tag
+)
 
 
 class IngredientAdmin(admin.ModelAdmin):
@@ -7,9 +9,17 @@ class IngredientAdmin(admin.ModelAdmin):
     search_fields = ('^name',)
 
 
-class IngredientAmountAdmin(admin.TabularInline):
+class IngredientAmountAdmin(admin.ModelAdmin):
+    list_display = ('recipe', 'ingredient', 'amount')
+
+
+class IngredientAmountInline(admin.TabularInline):
     model = IngredientAmount
     fk_name = 'recipe'
+
+
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ('user', 'recipe')
 
 
 class RecipeAdmin(admin.ModelAdmin):
@@ -19,7 +29,7 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('^name',)
 
     inlines = [
-        IngredientAmountAdmin,
+        IngredientAmountInline,
     ]
 
     @admin.display(empty_value='Никто')
@@ -29,25 +39,17 @@ class RecipeAdmin(admin.ModelAdmin):
     favorited.short_description = 'Кол-во людей добавивших в избранное'
 
 
-class TagAdmin(admin.ModelAdmin):
-    list_display = ('name', 'color', 'slug')
-
-
-class RecipeIngredientAdmin(admin.ModelAdmin):
-    list_display = ('recipe', 'ingredient', 'amount')
-
-
 class ShoppingCartAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe')
 
 
-class FavoriteAdmin(admin.ModelAdmin):
-    list_display = ('user', 'recipe')
+class TagAdmin(admin.ModelAdmin):
+    list_display = ('name', 'color', 'slug')
 
 
 admin.site.register(Ingredient, IngredientAdmin)
-admin.site.register(IngredientAmount, RecipeIngredientAdmin)
+admin.site.register(IngredientAmount, IngredientAmountAdmin)
+admin.site.register(Favorite, FavoriteAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(ShoppingCart, ShoppingCartAdmin)
 admin.site.register(Recipe, RecipeAdmin)
-admin.site.register(Favorite, FavoriteAdmin)
