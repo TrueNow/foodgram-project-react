@@ -34,7 +34,7 @@ class RecipeFilter(filterset.FilterSet):
         return queryset
 
     def filter_is_favorited(self, queryset, name, value):
-        return self._filter_is_param(queryset, name, value, param='favorites')
+        return self._filter_is_param(queryset, name, value, param='favorite')
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         return self._filter_is_param(queryset, name, value, param='shopping_cart')
