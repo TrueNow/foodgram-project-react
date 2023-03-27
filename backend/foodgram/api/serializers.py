@@ -46,10 +46,7 @@ class UserGetSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username', 'first_name', 'last_name', 'is_subscribed')
 
     def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        if not request or request.user.is_anonymous or request.user == obj:
-            return False
-        return obj.following.get(user=request.user).exists()
+        return obj.id in self.context.get('subscribed_users', [])
 
 
 class UsersChangePasswordSerializer(serializers.ModelSerializer):
