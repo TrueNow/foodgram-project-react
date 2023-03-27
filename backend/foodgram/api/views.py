@@ -191,8 +191,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.get_user())
 
     def _create_instance(self, data):
-        serializer = self.get_serializer()
-        instance = serializer.create(data)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid()
+        instance = serializer.save()
         response_data = serializer.to_representation(instance=instance)
         return response.Response(response_data, status=status.HTTP_201_CREATED)
 
@@ -201,29 +202,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.delete(data)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    def _favorite_or_shopping_cart_view(self):
+    def _favorite_or_shopping_cart_view(self, model):
         data = {
-            'user': self.get_user(),
-            'recipe': self.get_object()
+            'user': self.get_user().id,
+            'recipe': self.get_object().id
         }
         if self.request.method == 'POST':
             return self._create_instance(data)
         if self.request.method == 'DELETE':
-            return self._delete_instance(data)
+            return self._delete_instance(data, model)
 
     @decorators.action(
         methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite',
         permission_classes=[permissions.IsAuthenticated]
     )
     def favorite(self, request, *args, **kwargs):
-        return self._favorite_or_shopping_cart_view()
+        return self._favorite_or_shopping_cart_view(models_recipes.Favorite)
 
     @decorators.action(
         methods=['delete', 'post'], detail=True, url_path='shopping_cart', url_name='shopping_cart',
         permission_classes=[permissions.IsAuthenticated]
     )
     def shopping_cart(self, request, *args, **kwargs):
-        return self._favorite_or_shopping_cart_view()
+        return self._favorite_or_shopping_cart_view(models_recipes.ShoppingCart)
 
     @decorators.action(
         methods=['get'], detail=False,

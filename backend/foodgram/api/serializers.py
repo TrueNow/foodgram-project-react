@@ -282,12 +282,12 @@ class FavoriteOrShoppingOrSubscribeCreateSerializer(serializers.ModelSerializer)
             raise serializers.ValidationError({'errors': self.ERRORS_TEXT.get('create')})
         return instance
 
-    def delete(self, validated_data):
+    def update(self, instance, validated_data):
         try:
-            self.Meta.model.objects.get(**validated_data).delete()
-        except self.Meta.model.DoesNotExist:
+            instance.delete()
+        except Exception:
             raise serializers.ValidationError({'errors': self.ERRORS_TEXT.get('delete')})
-        return
+        return instance
 
     def to_representation(self, instance):
         return RecipeShortGetSerializer(instance=instance.recipe).data
