@@ -7,7 +7,9 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from rest_framework import viewsets, decorators, response, mixins, status, exceptions
 
-from recipes import models
+
+from users import models as models_users
+from recipes import models as models_recipes
 from core import permissions, paginations
 
 from . import serializers, filters
@@ -34,6 +36,23 @@ class UserViewSet(mixins.CreateModelMixin,
             return serializers.SubscriberGetSerializer
         elif self.action in ('set_password',):
             return serializers.UsersChangePasswordSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.request.user.is_anonymous or self.action not in ('list', 'retrieve'):
+            return context
+
+        data = {'subscriber': self.get_user()}
+        if self.kwargs:
+            data['author'] = self.get_object()
+
+        add_context_data = {
+            'subscribed_users': models_users.Subscription,
+        }
+        for name, model in add_context_data.items():
+            context[name] = set(model.objects.filter(**data).values_list('author_id', flat=True))
+        return context
+
 
     def get_user(self):
         return self.request.user
@@ -104,14 +123,14 @@ class UserViewSet(mixins.CreateModelMixin,
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = models.Tag.objects.all()
+    queryset = models_recipes.Tag.objects.all()
     serializer_class = serializers.TagGetSerializer
     permission_classes = (permissions.AllowAny,)
     pagination_class = None
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = models.Ingredient.objects.all()
+    queryset = models_recipes.Ingredient.objects.all()
     serializer_class = serializers.IngredientGetSerializer
     permission_classes = (permissions.AllowAny,)
     pagination_class = None
@@ -120,7 +139,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = models.Recipe.objects.all()
+    queryset = models_recipes.Recipe.objects.all()
     permission_classes = (permissions.IsOwnerOrAdminOrReadOnly,)
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = filters.RecipeFilter
@@ -142,7 +161,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        if self.request.user.is_anonymous:
+        if self.request.user.is_anonymous or self.action not in ('list', 'retrieve'):
             return context
 
         data = {'user': self.get_user()}
@@ -150,11 +169,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
             data['recipe'] = self.get_object()
 
         add_context_data = {
-            'favorite_recipes': models.Favorite,
-            'shopping_recipes': models.ShoppingCart
+            'favorite_recipes': models_recipes.Favorite,
+            'shopping_recipes': models_recipes.ShoppingCart
         }
         for name, model in add_context_data.items():
             context[name] = set(model.objects.filter(**data).values_list('recipe_id', flat=True))
+
+        data = {
+            'subscriber': self.get_user(),
+        }
+        if self.kwargs:
+            data['author_id'] = self.get_object().author
+
+        context['subscribed_users'] = set(
+            models_users.Subscription.objects.filter(**data).values_list('author_id', flat=True)
+        )
         return context
 
     def perform_create(self, serializer):
@@ -164,10 +193,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.get_user())
 
     def _create_instance(self, data):
-        serializer = self.get_serializer()
-        instance = serializer.create(data)
-        response_data = serializer.to_representation(instance=instance)
-        return response.Response(response_data, status=status.HTTP_201_CREATED)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid()
+        serializer.save()
+        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def _delete_instance(self, data):
         serializer = self.get_serializer()
@@ -176,8 +205,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def _favorite_or_shopping_cart_view(self):
         data = {
-            'user': self.get_user(),
-            'recipe': self.get_object()
+            'user': self.get_user().id,
+            'recipe': self.get_object().id
         }
         if self.request.method == 'POST':
             return self._create_instance(data)
@@ -208,7 +237,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if not user.shopping_cart.exists():
             raise exceptions.ValidationError('В списке покупок нет рецептов.')
 
-        ingredients = models.IngredientAmount.objects.filter(
+        ingredients = models_recipes.IngredientAmount.objects.filter(
             recipe__shopping_cart__user=user
         ).values(
             'ingredient__name',
