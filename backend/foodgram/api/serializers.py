@@ -46,10 +46,7 @@ class UserGetSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username', 'first_name', 'last_name', 'is_subscribed')
 
     def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        if not request or request.user.is_anonymous or request.user == obj:
-            return False
-        return obj.following.get(user=request.user).exists()
+        return obj.id in self.context.get('subscribed_users', [])
 
 
 class UsersChangePasswordSerializer(serializers.ModelSerializer):
@@ -280,17 +277,18 @@ class FavoriteOrShoppingOrSubscribeCreateSerializer(serializers.ModelSerializer)
 
     def create(self, validated_data):
         try:
-            instance = self.Meta.model.objects.create(**validated_data)
+            self.instance = self.Meta.model.objects.create(**validated_data)
         except IntegrityError:
             raise serializers.ValidationError({'errors': self.ERRORS_TEXT.get('create')})
-        return instance
+        return self.instance
 
     def delete(self, validated_data):
         try:
-            self.Meta.model.objects.get(**validated_data).delete()
+            instance = self.Meta.model.objects.get(**validated_data)
         except self.Meta.model.DoesNotExist:
             raise serializers.ValidationError({'errors': self.ERRORS_TEXT.get('delete')})
-        return
+        instance.delete()
+        return None
 
     def to_representation(self, instance):
         return RecipeShortGetSerializer(instance=instance.recipe).data
