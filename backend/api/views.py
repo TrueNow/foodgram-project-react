@@ -133,8 +133,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return serializers.RecipeGetSerializer
         elif self.action in ('create', 'update', 'partial_update'):
             return serializers.RecipeCreateSerializer
-        elif self.action in ('favorite', 'shopping_cart'):
+        elif self.action in ('favorite',):
             return serializers.FavoriteCreateSerializer
+        elif self.action in ('shopping_cart',):
+            return serializers.ShoppingCreateSerializer
         elif self.action in ('download_shopping_cart',):
             return serializers.ShoppingCartDownloadSerializer
 
