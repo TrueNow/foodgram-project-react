@@ -152,8 +152,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return serializers.RecipeGetSerializer
         elif self.action in ('create', 'update', 'partial_update'):
             return serializers.RecipeCreateSerializer
-        elif self.action in ('favorite', 'shopping_cart'):
+        elif self.action in ('favorite',):
             return serializers.FavoriteCreateSerializer
+        elif self.action in ('shopping_cart',):
+            return serializers.ShoppingCreateSerializer
         elif self.action in ('download_shopping_cart',):
             return serializers.ShoppingCartDownloadSerializer
 
@@ -193,16 +195,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def _create_instance(self, data):
         serializer = self.get_serializer(data=data)
         serializer.is_valid()
-        instance = serializer.save()
-        response_data = serializer.to_representation(instance=instance)
-        return response.Response(response_data, status=status.HTTP_201_CREATED)
+        serializer.save()
+        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def _delete_instance(self, data):
         serializer = self.get_serializer()
         serializer.delete(data)
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
-    def _favorite_or_shopping_cart_view(self, model):
+    def _favorite_or_shopping_cart_view(self):
         data = {
             'user': self.get_user().id,
             'recipe': self.get_object().id
@@ -210,21 +211,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.request.method == 'POST':
             return self._create_instance(data)
         if self.request.method == 'DELETE':
-            return self._delete_instance(data, model)
+            return self._delete_instance(data)
 
     @decorators.action(
         methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite',
         permission_classes=[permissions.IsAuthenticated]
     )
     def favorite(self, request, *args, **kwargs):
-        return self._favorite_or_shopping_cart_view(models_recipes.Favorite)
+        return self._favorite_or_shopping_cart_view()
 
     @decorators.action(
         methods=['delete', 'post'], detail=True, url_path='shopping_cart', url_name='shopping_cart',
         permission_classes=[permissions.IsAuthenticated]
     )
     def shopping_cart(self, request, *args, **kwargs):
-        return self._favorite_or_shopping_cart_view(models_recipes.ShoppingCart)
+        return self._favorite_or_shopping_cart_view()
 
     @decorators.action(
         methods=['get'], detail=False,
