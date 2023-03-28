@@ -38,12 +38,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Push backend to Docker Hub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4.0.0
         with:
           push: true
           tags: s3r3ga/infra-backend:latest
       - name: Push frontend to Docker Hub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4.0.0
         with:
           push: true
           tags: s3r3ga/infra-frontend:latest
