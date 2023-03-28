@@ -15,10 +15,6 @@ services:
 
   backend:
     image: s3r3ga/infra-backend:latest
-#
-#    build: .
-#      context: ../backend
-#      dockerfile: Dockerfile
     restart: always
     volumes:
       - ../backend/:/backend/
@@ -31,9 +27,6 @@ services:
 
   frontend:
     image: s3r3ga/infra-frontend:latest
-#    build: .
-#      context: ../frontend
-#      dockerfile: Dockerfile
     restart: always
     volumes:
       - ../frontend/:/app/result_build/
