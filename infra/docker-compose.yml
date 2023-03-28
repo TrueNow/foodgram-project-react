@@ -1,4 +1,10 @@
-version: '3.3'
+version: '3.8'
+
+volumes:
+  static_value:
+  media_value:
+  db_value:
+
 services:
   db:
     image: postgres:13.0-alpine
@@ -8,9 +14,11 @@ services:
       - .env
 
   backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
+    image: s3r3ga/infra-backend:latest
+#
+#    build: .
+#      context: ../backend
+#      dockerfile: Dockerfile
     restart: always
     volumes:
       - ../backend/:/backend/
@@ -22,9 +30,11 @@ services:
       - .env
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: s3r3ga/infra-frontend:latest
+#    build: .
+#      context: ../frontend
+#      dockerfile: Dockerfile
+    restart: always
     volumes:
       - ../frontend/:/app/result_build/
 
@@ -41,8 +51,3 @@ services:
     depends_on:
       - backend
       - frontend
-
-volumes:
-  static_value:
-  media_value:
-  db_value:
