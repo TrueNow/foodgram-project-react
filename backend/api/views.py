@@ -53,7 +53,6 @@ class UserViewSet(mixins.CreateModelMixin,
             context[name] = set(model.objects.filter(**data).values_list('author_id', flat=True))
         return context
 
-
     def get_user(self):
         return self.request.user
 
@@ -83,6 +82,31 @@ class UserViewSet(mixins.CreateModelMixin,
         return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @decorators.action(
+        methods=['post', 'delete'], detail=True, url_path='subscribe', url_name='subscribe',
+        permission_classes=[permissions.IsAuthenticated]
+    )
+    def subscribe(self, request, *args, **kwargs):
+        data = {
+            'subscriber': self.get_user().id,
+            'author': self.get_object().id
+        }
+        if self.request.method == 'POST':
+            return self._create_subscribe(request, data)
+        elif self.request.method == 'DELETE':
+            return self._delete_subscribe(data)
+
+    def _create_subscribe(self, request, data):
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def _delete_subscribe(self, data):
+        serializer = self.get_serializer()
+        serializer.delete(data)
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
+
+    @decorators.action(
         methods=['get'], detail=False, url_path='subscriptions', url_name='subscriptions',
         permission_classes=[permissions.IsAuthenticated]
     )
@@ -96,31 +120,6 @@ class UserViewSet(mixins.CreateModelMixin,
         headers = self.get_success_headers(serializer.data)
         return response.Response(data=serializer.data, status=status.HTTP_200_OK, headers=headers)
 
-    def _create_subscribe(self, data):
-        serializer = self.get_serializer()
-        instance = serializer.create(data)
-        response_data = serializer.to_representation(instance=instance)
-        return response.Response(response_data, status=status.HTTP_201_CREATED)
-
-    def _delete_subscribe(self, data):
-        serializer = self.get_serializer()
-        serializer.delete(data)
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
-
-    @decorators.action(
-        methods=['post', 'delete'], detail=True, url_path='subscribe', url_name='subscribe',
-        permission_classes=[permissions.IsAuthenticated]
-    )
-    def subscribe(self, request, *args, **kwargs):
-        data = {
-            'subscriber': self.get_user(),
-            'author': self.get_object()
-        }
-        if self.request.method == 'POST':
-            return self._create_subscribe(data)
-        elif self.request.method == 'DELETE':
-            return self._delete_subscribe(data)
-
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = models_recipes.Tag.objects.all()
@@ -129,7 +128,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class IngredientViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = models_recipes.Ingredient.objects.all()
     serializer_class = serializers.IngredientGetSerializer
     permission_classes = (permissions.AllowAny,)
@@ -192,27 +191,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(author=self.get_user())
 
-    def _create_instance(self, data):
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid()
-        serializer.save()
-        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def _delete_instance(self, data):
-        serializer = self.get_serializer()
-        serializer.delete(data)
-        return response.Response(status=status.HTTP_204_NO_CONTENT)
-
-    def _favorite_or_shopping_cart_view(self):
-        data = {
-            'user': self.get_user().id,
-            'recipe': self.get_object().id
-        }
-        if self.request.method == 'POST':
-            return self._create_instance(data)
-        if self.request.method == 'DELETE':
-            return self._delete_instance(data)
-
     @decorators.action(
         methods=['delete', 'post'], detail=True, url_path='favorite', url_name='favorite',
         permission_classes=[permissions.IsAuthenticated]
@@ -226,6 +204,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, *args, **kwargs):
         return self._favorite_or_shopping_cart_view()
+
+    def _favorite_or_shopping_cart_view(self):
+        data = {
+            'user': self.get_user().id,
+            'recipe': self.get_object().id
+        }
+        if self.request.method == 'POST':
+            return self._create_instance(data)
+        if self.request.method == 'DELETE':
+            return self._delete_instance(data)
+
+    def _create_instance(self, data):
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def _delete_instance(self, data):
+        serializer = self.get_serializer()
+        serializer.delete(data)
+        return response.Response(status=status.HTTP_204_NO_CONTENT)
 
     @decorators.action(
         methods=['get'], detail=False,
