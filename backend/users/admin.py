@@ -27,7 +27,7 @@ class UserCreationForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data['password1'])
+        user.set_password(self.cleaned_data.get('password1'))
         if commit:
             user.save()
         return user
@@ -37,12 +37,12 @@ class UserAdmin(admin_auth.UserAdmin):
     add_form = UserCreationForm
 
     list_display = (
-        'email', 'username', 'first_name', 'last_name', 'is_staff'
+        'username', 'email', 'first_name', 'last_name', 'is_staff'
     )
     list_filter = ('email', 'username')
     fieldsets = (
-        ('Данные профиля', {'fields': ('username', 'password',)}),
-        ('Персональные данные', {'fields': ('email', 'first_name', 'last_name',)}),
+        ('Данные профиля', {'fields': ('username', 'email', 'password',)}),
+        ('Персональные данные', {'fields': ('first_name', 'last_name',)}),
         ('Права доступа', {'fields': ('is_staff',)}),
     )
     search_fields = ('^email', '^username')
