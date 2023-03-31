@@ -55,7 +55,6 @@ INSTALLED_APPS = [
     'django_filters',
     'users.apps.UsersConfig',
     'recipes.apps.RecipesConfig',
-    'core.apps.CoreConfig',
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',
@@ -79,7 +78,7 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'core.paginations.CustomPagination',
+    'DEFAULT_PAGINATION_CLASS': 'api.paginations.CustomPagination',
 }
 
 AUTH_USER_MODEL = 'users.User'

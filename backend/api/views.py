@@ -10,9 +10,8 @@ from rest_framework import viewsets, decorators, response, mixins, status, excep
 
 from users import models as models_users
 from recipes import models as models_recipes
-from core import permissions, paginations
 
-from . import serializers, filters
+from . import permissions, paginations, serializers, filters
 
 User = get_user_model()
 
@@ -91,11 +90,11 @@ class UserViewSet(mixins.CreateModelMixin,
             'author': self.get_object().id
         }
         if self.request.method == 'POST':
-            return self._create_subscribe(request, data)
+            return self._create_subscribe(data)
         elif self.request.method == 'DELETE':
             return self._delete_subscribe(data)
 
-    def _create_subscribe(self, request, data):
+    def _create_subscribe(self, data):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -108,7 +107,7 @@ class UserViewSet(mixins.CreateModelMixin,
 
     @decorators.action(
         methods=['get'], detail=False, url_path='subscriptions', url_name='subscriptions',
-        permission_classes=[permissions.IsAuthenticated]
+        permission_classes=[permissions.IsAuthenticated], pagination_class=paginations.CustomPagination
     )
     def subscriptions(self, request, *args, **kwargs):
         instance = self.get_user()
@@ -116,9 +115,12 @@ class UserViewSet(mixins.CreateModelMixin,
         subscribers = User.objects.filter(
             id__in=subscriptions.values('author'),
         )
+        page = self.paginate_queryset(subscribers)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(subscribers, many=True)
-        headers = self.get_success_headers(serializer.data)
-        return response.Response(data=serializer.data, status=status.HTTP_200_OK, headers=headers)
+        return response.Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
