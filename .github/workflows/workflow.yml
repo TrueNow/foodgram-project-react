@@ -65,8 +65,7 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
             sudo docker-compose stop
-            sudo docker-compose rm infra-frontend
-            sudo docker-compose rm infra-backend
+            sudo docker-compose rm infra_backend_1
             touch .env
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
             echo DB_NAME=${{ secrets.DB_NAME }} >> .env
