@@ -28,13 +28,14 @@ if dotenv_path:
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', default='django-insecure-Django_secret_key_Django_secret_key_Django_secret')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', 'localhost', '158.160.17.113']
 
 INTERNAL_IPS = [
     '127.0.0.1',
     'localhost',
+    '158.160.17.113'
 ]
 
 STATIC_URL = '/static/'

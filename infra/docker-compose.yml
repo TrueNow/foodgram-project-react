@@ -1,23 +1,25 @@
 version: '3.8'
 
 volumes:
+  db_value:
   static_value:
   media_value:
-  db_value:
 
 services:
+
   db:
-    image: postgres:13.0-alpine
+    image: postgres:15.0-alpine
     volumes:
       - db_value:/var/lib/postgresql/data/
     env_file:
       - .env
+    restart: always
 
   backend:
-    image: s3r3ga/infra-backend:latest
+    build: ../backend/Dockerfile
     restart: always
     volumes:
-      - ../backend/:/backend/
+#      - ../backend/:/backend/
       - static_value:/backend/static/
       - media_value:/backend/media/
     depends_on:
@@ -29,6 +31,8 @@ services:
     image: s3r3ga/infra-frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
+    depends_on:
+      - db
 
   nginx:
     image: nginx:1.19.3

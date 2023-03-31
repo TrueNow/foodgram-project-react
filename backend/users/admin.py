@@ -10,6 +10,7 @@ User = get_user_model()
 
 
 class UserCreationForm(forms.ModelForm):
+    email = forms.EmailField(label='Почта')
     password1 = forms.CharField(label='Пароль', widget=forms.PasswordInput)
     password2 = forms.CharField(label='Подтверждение пароля', widget=forms.PasswordInput)
 
@@ -30,14 +31,6 @@ class UserCreationForm(forms.ModelForm):
         if commit:
             user.save()
         return user
-
-
-class UserChangeForm(forms.ModelForm):
-    class Meta:
-        model = User
-        fields = (
-            'email', 'password', 'username', 'first_name', 'last_name', 'is_active', 'is_staff'
-        )
 
 
 class UserAdmin(admin_auth.UserAdmin):
