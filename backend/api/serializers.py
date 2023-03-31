@@ -34,8 +34,7 @@ class UsersCreateSerializer(serializers.ModelSerializer):
         return user
 
     def to_representation(self, instance):
-        serializer = UserGetSerializer(instance)
-        return serializer.data
+        return UserGetSerializer(instance).data
 
 
 class UserGetSerializer(serializers.ModelSerializer):
@@ -111,8 +110,7 @@ class IngredientAmountCreateSerializer(serializers.ModelSerializer):
         return amount
 
     def to_representation(self, instance):
-        serializer = IngredientAmountGetSerializer(instance)
-        return serializer.data
+        return IngredientAmountGetSerializer(instance).data
 
 
 class TagGetSerializer(serializers.ModelSerializer):
@@ -244,8 +242,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, instance):
-        serializer = RecipeGetSerializer(instance)
-        return serializer.data
+        return RecipeGetSerializer(instance).data
 
 
 class ShoppingCartDownloadSerializer(serializers.ModelSerializer):
