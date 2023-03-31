@@ -8,7 +8,7 @@ volumes:
 services:
 
   db:
-    image: postgres:15.0-alpine
+    image: postgres:13.0-alpine
     volumes:
       - db_value:/var/lib/postgresql/data/
     env_file:
@@ -16,10 +16,11 @@ services:
     restart: always
 
   backend:
-    build: ../backend/Dockerfile
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
     restart: always
     volumes:
-#      - ../backend/:/backend/
       - static_value:/backend/static/
       - media_value:/backend/media/
     depends_on:
@@ -28,7 +29,9 @@ services:
       - .env
 
   frontend:
-    image: s3r3ga/infra-frontend:latest
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
