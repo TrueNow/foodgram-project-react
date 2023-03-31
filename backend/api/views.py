@@ -129,7 +129,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
-class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+class IngredientViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
     queryset = models_recipes.Ingredient.objects.all()
     serializer_class = serializers.IngredientGetSerializer
     permission_classes = (permissions.AllowAny,)

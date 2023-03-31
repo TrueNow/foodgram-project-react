@@ -17,7 +17,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-dotenv_path = dotenv.find_dotenv()
+dotenv_path = dotenv.find_dotenv('../../infra/.env')
 if dotenv_path:
     dotenv.load_dotenv(dotenv_path)
 
