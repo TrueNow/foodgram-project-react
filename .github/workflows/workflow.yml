@@ -58,12 +58,9 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
-            sudo docker pull s3r3ga/infra-frontend:latest
-            sudo docker pull s3r3ga/infra-backend:latest
-            sudo docker-compose stop
-            sudo docker-compose rm frontend
-            sudo docker-compose rm backend
-            sudo docker-compose rm nginx
+            sudo docker-compose down
+            sudo docker image rm ${{ secrets.DOCKER_USERNAME }}/infra-backend
+            sudo docker image rm ${{ secrets.DOCKER_USERNAME }}/infra-frontend
             touch .env
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} >> .env
             echo DB_NAME=${{ secrets.DB_NAME }} >> .env
