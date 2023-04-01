@@ -3,8 +3,6 @@ from datetime import datetime
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import redirect
-from django.urls import reverse
 from rest_framework import viewsets, decorators, response, mixins, status, exceptions
 
 
@@ -16,7 +14,21 @@ from . import permissions, paginations, serializers, filters
 User = get_user_model()
 
 
-class UserViewSet(mixins.CreateModelMixin,
+class PaginateResponse:
+    """
+    Add a paginate response.
+    """
+    def paginate_response(self, queryset):
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return response.Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+class UserViewSet(PaginateResponse,
+                  mixins.CreateModelMixin,
                   mixins.RetrieveModelMixin,
                   mixins.ListModelMixin,
                   viewsets.GenericViewSet):
@@ -57,7 +69,7 @@ class UserViewSet(mixins.CreateModelMixin,
 
     def retrieve(self, request, *args, **kwargs):
         if self.get_user() == self.get_object():
-            return redirect(reverse('users:users-me'))
+            return self.me(request, *args, **kwargs)
         return super().retrieve(request, *args, **kwargs)
 
     @decorators.action(
@@ -115,12 +127,7 @@ class UserViewSet(mixins.CreateModelMixin,
         subscribers = User.objects.filter(
             id__in=subscriptions.values('author'),
         )
-        page = self.paginate_queryset(subscribers)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(subscribers, many=True)
-        return response.Response(data=serializer.data, status=status.HTTP_200_OK)
+        return self.paginate_response(subscribers)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -139,7 +146,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_class = filters.IngredientFilter
 
 
-class RecipeViewSet(viewsets.ModelViewSet):
+class RecipeViewSet(PaginateResponse, viewsets.ModelViewSet):
     queryset = models_recipes.Recipe.objects.all()
     permission_classes = (permissions.IsOwnerOrAdminOrReadOnly,)
     filter_backends = (filters.DjangoFilterBackend,)

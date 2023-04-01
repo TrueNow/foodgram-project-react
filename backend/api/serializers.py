@@ -259,9 +259,7 @@ class SubscriberGetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = (
-            'email', 'username', 'first_name', 'last_name', 'recipes', 'recipes_count'
-        )
+        fields = ('email', 'username', 'first_name', 'last_name', 'recipes', 'recipes_count')
 
     def get_recipes(self, obj):
         request = self.context.get('request')
@@ -321,12 +319,18 @@ class ShoppingCreateSerializer(FavoriteOrShoppingOrSubscribeCreateSerializer):
 class SubscriptionCreateSerializer(FavoriteOrShoppingOrSubscribeCreateSerializer):
     ERRORS_TEXT = {
         'create': 'Вы уже подписаны на этого пользователя.',
-        'delete': 'Невозможно отменить подписку. Вы не были подписаны на этого автора.'
+        'delete': 'Невозможно отменить подписку. Вы не были подписаны на этого автора.',
+        'validate': 'Нельзя подписаться на самого себя.',
     }
 
     class Meta:
         model = Subscription
         fields = ('subscriber', 'author')
+
+    def validate(self, attrs):
+        if attrs.get('subscriber') == attrs.get('author'):
+            raise serializers.ValidationError({'error': self.ERRORS_TEXT.get('validate')})
+        return attrs
 
     def to_representation(self, instance):
         return SubscriberGetSerializer(instance=instance.author).data
