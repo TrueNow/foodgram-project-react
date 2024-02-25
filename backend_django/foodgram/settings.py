@@ -28,7 +28,7 @@ if dotenv_path:
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', default='django-insecure-Django_secret_key_Django_secret_key_Django_secret')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*', 'localhost', '158.160.17.113']
 
@@ -39,9 +39,9 @@ INTERNAL_IPS = [
 ]
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR.parent, 'static')
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR.parent, 'media')
 
 # Application definition
 
@@ -113,23 +113,23 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', default='default'),
-        'USER': os.getenv('POSTGRES_USER', default='default'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='default'),
-        'HOST': os.getenv('DB_HOST', default='default'),
-        'PORT': os.getenv('DB_PORT', default='default')
-    }
-}
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('DB_NAME', default='default'),
+#         'USER': os.getenv('POSTGRES_USER', default='default'),
+#         'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='default'),
+#         'HOST': os.getenv('DB_HOST', default='default'),
+#         'PORT': os.getenv('DB_PORT', default='default')
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR.parent / 'db.sqlite3',
+    }
+}
 
 
 # Password validation

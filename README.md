@@ -110,17 +110,17 @@ docker-compose up
 
 После успешного запуска контейнеров выполнить миграции:
 ```bash
-docker-compose exec backend python manage.py migrate
+docker-compose exec backend_django python manage.py migrate
 ```
 
 Создать суперюзера (Администратора):
 ```bash
-docker-compose exec backend python manage.py createsuperuser
+docker-compose exec backend_django python manage.py createsuperuser
 ```
 
 Собрать статику:
 ```bash
-docker-compose exec backend python manage.py collectstatic --no-input
+docker-compose exec backend_django python manage.py collectstatic --no-input
 ```
 
 Теперь доступность проекта можно проверить по адресу [http://localhost/](http://localhost/)
@@ -130,7 +130,7 @@ docker-compose exec backend python manage.py collectstatic --no-input
 
 С проектом поставляются данные об ингредиентах. Заполнить базу данных ингредиентами можно выполнив следующую команду:
 ```bash
-docker-compose exec backend python manage.py ingredients
+docker-compose exec backend_django python manage.py ingredients
 ```
 
 Также необходимо заполнить базу данных тегами (или другими данными).  
